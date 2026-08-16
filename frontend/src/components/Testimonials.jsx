@@ -27,7 +27,7 @@ function Stars({ rating = 5 }) {
   );
 }
 
-export default function Testimonials({ items }) {
+export default function Testimonials({ items = [] }) {
   return (
     <section className="rns-section">
       <div className="rns-container">

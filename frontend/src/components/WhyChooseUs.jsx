@@ -3,7 +3,7 @@ import { SectionHeader } from "./SectionHeader";
 import Icon from "./Icon";
 import Reveal from "./ui/Reveal";
 
-export default function WhyChooseUs({ items, brandName = "RNS INFOTECH" }) {
+export default function WhyChooseUs({ items = [], brandName = "RNS INFOTECH" }) {
   return (
     <section className="rns-section">
       <div className="rns-container">

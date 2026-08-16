@@ -1,7 +1,7 @@
 import React from "react";
 import Button from "./Button";
 
-export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCta, stats }) {
+export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCta, stats = [] }) {
   return (
     <section style={{ position: "relative", overflow: "hidden", borderBottom: "1px solid var(--rns-line)" }}>
       {/* quiet schematic backdrop — static, low-contrast, no motion */}

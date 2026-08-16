@@ -3,7 +3,7 @@ import { SectionHeader } from "./SectionHeader";
 import Icon from "./Icon";
 import Reveal from "./ui/Reveal";
 
-export default function Solutions({ items }) {
+export default function Solutions({ items = [] }) {
   return (
     <section id="solutions" className="rns-section rns-section--alt">
       <div className="rns-container">

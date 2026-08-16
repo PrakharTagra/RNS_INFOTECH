@@ -1,4 +1,4 @@
-const configured = import.meta.env.VITE_ERROR_REPORT_URL || '/api/telemetry/client-error';
+const configured = import.meta.env.VITE_ERROR_REPORT_URL || '/telemetry/client-error';
 const endpoint = configured.startsWith('http') ? configured : `${String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')}${configured}`;
 function sanitize(value) {
   if (!value) return value;

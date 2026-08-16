@@ -36,9 +36,12 @@ const listFlashMessages = asyncHandler(async (req, res) => {
   res.json({ items });
 });
 
+const WEBSITE_DEFAULTS = { hero: null, promo: null, whyChooseUs: [], solutions: [], testimonials: [], categories: [] };
+
 const getWebsite = asyncHandler(async (req, res) => {
   const settings = await SiteSettings.findOne({ key: "global" }).lean();
-  res.json({ website: settings?.homepagePublished || settings?.homepage || {} });
+  const homepage = settings?.homepagePublished || settings?.homepage || {};
+  res.json({ website: { ...WEBSITE_DEFAULTS, ...homepage } });
 });
 
 const listFaqs = asyncHandler(async (req, res) => {
