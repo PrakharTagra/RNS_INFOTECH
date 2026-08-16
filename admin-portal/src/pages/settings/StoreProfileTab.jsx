@@ -25,9 +25,15 @@ export default function StoreProfileTab() {
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
-    await updateStoreProfile(form);
-    setSaving(false);
-    showToast("Store profile updated");
+    try {
+      const updated = await updateStoreProfile(form);
+      if (updated) setForm(updated);
+      showToast("Store profile updated");
+    } catch (error) {
+      showToast(error?.message || "Unable to update store profile", "error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!form) return <div className="admin-card">Loading store profile…</div>;
@@ -36,7 +42,7 @@ export default function StoreProfileTab() {
     <form onSubmit={handleSubmit} className="admin-card">
       <h3 style={{ marginBottom: 4 }}>Business identity</h3>
       <p style={{ fontSize: 12.5, color: "var(--admin-ink-faint)", marginBottom: 14 }}>
-        Shown on the storefront's Help page, footer, and invoices once a backend connects the two apps.
+        Persisted in MongoDB and used by the storefront's Help page, footer, and invoice data.
       </p>
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr" }}>
         <FormField label="Display name" htmlFor="sp-name" required>

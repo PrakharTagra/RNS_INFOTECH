@@ -9,9 +9,7 @@ import { getCommerceSettings, updateCommerceSettings } from "../../services/sett
 // frontend.zip's CheckoutPage.jsx (free-shipping threshold/fee) and
 // this app's productsService.js (deriveStockLabel's low-stock cutoff,
 // now read via settingsService.getLowStockThresholdSync instead of a
-// literal 8). The shipping numbers are admin-side only for now (same
-// cross-origin limitation as every prior phase) — they don't reach the
-// storefront until a backend/API connects the two.
+// literal 8). The storefront backend reads these persisted values when calculating checkout pricing.
 export default function CommerceTab() {
   const { toast, showToast, clearToast } = useToast();
   const [form, setForm] = useState(null);
@@ -28,16 +26,22 @@ export default function CommerceTab() {
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
-    await updateCommerceSettings({
-      freeShippingThreshold: Number(form.freeShippingThreshold) || 0,
-      flatShippingFee: Number(form.flatShippingFee) || 0,
-      lowStockThreshold: Math.max(0, Number(form.lowStockThreshold) || 0),
-      taxRate: Math.max(0, Number(form.taxRate) || 0),
-      standardDeliveryFee: Math.max(0, Number(form.standardDeliveryFee) || 0),
-      expressDeliveryFee: Math.max(0, Number(form.expressDeliveryFee) || 0),
-    });
-    setSaving(false);
-    showToast("Commerce settings updated");
+    try {
+      const updated = await updateCommerceSettings({
+        freeShippingThreshold: Number(form.freeShippingThreshold) || 0,
+        flatShippingFee: Number(form.flatShippingFee) || 0,
+        lowStockThreshold: Math.max(0, Number(form.lowStockThreshold) || 0),
+        taxRate: Math.max(0, Number(form.taxRate) || 0),
+        standardDeliveryFee: Math.max(0, Number(form.standardDeliveryFee) || 0),
+        expressDeliveryFee: Math.max(0, Number(form.expressDeliveryFee) || 0),
+      });
+      if (updated) setForm(updated);
+      showToast("Commerce settings updated");
+    } catch (error) {
+      showToast(error?.message || "Unable to update commerce settings", "error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!form) return <div className="admin-card">Loading commerce settings…</div>;

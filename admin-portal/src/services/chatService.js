@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { adminApiRequest, getAdminAccessToken } from "../lib/adminApi";
+import { adminApiRequest, getAdminAccessToken, refreshAdminAccessToken } from "../lib/adminApi";
 
 const SOCKET_BASE_URL = import.meta.env.VITE_ADMIN_API_BASE_URL.replace(/\/api\/?$/, "");
 
@@ -135,7 +135,11 @@ async function getSocket() {
           auth: { accessToken: token },
         });
 
-        socket.on("connect", () => {
+        socket.on("connect", async () => {
+          const currentToken = await getAdminAccessToken();
+          if (currentToken && socket.auth?.accessToken !== currentToken) {
+            socket.auth = { accessToken: currentToken };
+          }
           for (const threadId of threadCallbacks.keys()) {
             socket.emit("chat:join", { threadId });
           }
@@ -148,8 +152,13 @@ async function getSocket() {
           for (const callback of callbacks) callback(payload);
         });
 
-        socket.on("connect_error", (error) => {
+        socket.on("connect_error", async (error) => {
           console.warn("Admin chat realtime connection failed:", error?.message || error);
+          const refreshedToken = await refreshAdminAccessToken();
+          if (refreshedToken && socket) {
+            socket.auth = { accessToken: refreshedToken };
+            if (!socket.connected) socket.connect();
+          }
         });
 
         socket.on("disconnect", () => {

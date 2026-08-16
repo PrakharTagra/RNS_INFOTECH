@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { apiRequest, getStoredAccessToken } from "./api";
+import { apiRequest, getStoredAccessToken, refreshStorefrontAccessToken } from "./api";
 
 const GUEST_KEY = "rns_chat_guest_id_v1";
 const CHAT_TOKEN_KEY = "rns_chat_guest_token_v1";
@@ -185,6 +185,10 @@ function connectSocket(threadId, onUpdate) {
     });
 
     socket.on("connect", async () => {
+      const currentToken = getStoredAccessToken();
+      if (currentToken && socket.auth?.accessToken !== currentToken) {
+        socket.auth = { accessToken: currentToken };
+      }
       socket.emit("chat:join", { threadId });
       // Reconcile once after every connection/reconnection so a message
       // sent while the browser was offline cannot be missed. This is a
@@ -200,8 +204,15 @@ function connectSocket(threadId, onUpdate) {
       if (payload?.threadId === threadId) notify(payload);
     });
 
-    socket.on("connect_error", (error) => {
+    socket.on("connect_error", async (error) => {
       console.warn("Chat realtime connection failed:", error?.message || error);
+      if (accessToken) {
+        const refreshedToken = await refreshStorefrontAccessToken();
+        if (refreshedToken && socket) {
+          socket.auth = { accessToken: refreshedToken };
+          if (!socket.connected) socket.connect();
+        }
+      }
     });
   } else {
     socket.emit("chat:join", { threadId });

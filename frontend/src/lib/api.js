@@ -6,6 +6,45 @@ const ACCESS_TOKEN_KEY = "rns_storefront_access_token_v1";
 const REFRESH_TOKEN_KEY = "rns_storefront_refresh_token_v1";
 const USER_KEY = "rns_storefront_user_v1";
 
+let refreshPromise = null;
+
+async function refreshAccessToken() {
+  if (refreshPromise) return refreshPromise;
+  const refreshToken = typeof window !== "undefined"
+    ? window.localStorage.getItem(REFRESH_TOKEN_KEY)
+    : null;
+  if (!refreshToken) return null;
+
+  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  })
+    .then(async (response) => {
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.accessToken || !payload?.refreshToken) {
+        clearStoredAuth();
+        return null;
+      }
+      setStoredAuth({
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken,
+        user: getStoredUser(),
+      });
+      return payload.accessToken;
+    })
+    .catch(() => null)
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
+export async function refreshStorefrontAccessToken() {
+  return refreshAccessToken();
+}
+
 export function getStoredAccessToken() {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(ACCESS_TOKEN_KEY) || null;
@@ -65,7 +104,7 @@ function userFacingApiMessage(status, payload, fallback = "We couldn't complete 
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function apiRequest(path, { method = "GET", body, token, headers = {}, authRequired = false, timeoutMs = 15000, retry = true } = {}) {
+export async function apiRequest(path, { method = "GET", body, token, headers = {}, authRequired = false, timeoutMs = 15000, retry = true, retryOnUnauthorized = true } = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
   const config = { method, headers: { ...headers }, signal: undefined };
   if (authRequired || token) {
@@ -87,6 +126,23 @@ export async function apiRequest(path, { method = "GET", body, token, headers = 
       clearTimeout(timer);
       const contentType = response.headers.get("content-type") || "";
       const payload = contentType.includes("application/json") ? await response.json().catch(() => null) : null;
+
+      if (response.status === 401 && authRequired && retryOnUnauthorized && !path.includes("/auth/refresh")) {
+        const refreshedToken = await refreshAccessToken();
+        if (refreshedToken) {
+          config.headers.Authorization = `Bearer ${refreshedToken}`;
+          return apiRequest(path, {
+            method,
+            body,
+            headers,
+            authRequired,
+            timeoutMs,
+            retry,
+            retryOnUnauthorized: false,
+          });
+        }
+      }
+
       if (response.ok) return payload;
       const retryAfterSeconds = Number(response.headers.get("retry-after") || payload?.error?.details?.retryAfterSeconds || 0);
       const retryableStatus = [502, 503, 504].includes(response.status);

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { getStoreProfileContent } from "../lib/contentApi";
 import { support as defaultSupport } from "../data/siteData";
 
@@ -7,29 +7,35 @@ const REFRESH_AFTER_MS = 30_000;
 
 export function SiteSettingsProvider({ children }) {
   const [support, setSupport] = useState(defaultSupport);
-  const [lastFetchedAt, setLastFetchedAt] = useState(0);
+  const lastFetchedAtRef = useRef(0);
+  const supportRef = useRef(defaultSupport);
 
   const refresh = useCallback(async ({ force = false } = {}) => {
-    if (!force && Date.now() - lastFetchedAt < REFRESH_AFTER_MS) return support;
+    if (!force && Date.now() - lastFetchedAtRef.current < REFRESH_AFTER_MS) {
+      return supportRef.current;
+    }
+
     try {
       const profile = await getStoreProfileContent();
       if (profile) {
-        // The backend is authoritative. Merge all returned fields,
-        // including intentionally empty values, instead of filtering by
-        // truthiness and accidentally keeping stale static business data.
-        setSupport((current) => ({ ...current, ...profile }));
+        // The backend is authoritative. Preserve the static values only as
+        // an outage fallback; an explicitly empty backend field must replace
+        // the old value rather than being hidden by a truthy merge.
+        const nextSupport = { ...supportRef.current, ...profile };
+        supportRef.current = nextSupport;
+        setSupport(nextSupport);
       }
-      setLastFetchedAt(Date.now());
+      lastFetchedAtRef.current = Date.now();
       return profile;
     } catch {
       // Keep the last known good values when the API is temporarily down.
       return null;
     }
-  }, [lastFetchedAt, support]);
+  }, []);
 
   useEffect(() => {
     refresh({ force: true });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refresh]);
 
   useEffect(() => {
     const refreshWhenVisible = () => {

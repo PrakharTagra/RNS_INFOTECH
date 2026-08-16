@@ -6,6 +6,34 @@ const logger = require("./utils/logger");
 const { verifyGuestChatToken } = require("./services/chatToken.service");
 let io;
 
+// A message written by this process is emitted directly for lowest latency.
+// The same MongoDB change also arrives through the cross-service change
+// stream; suppress that local echo so each connected client receives one
+// realtime event while the other backend still receives the database event.
+const localMessageEchoes = new Map();
+function rememberLocalMessage(message) {
+  if (!message) return;
+  const keys = [message.id, message.clientMessageId].filter(Boolean).map(String);
+  keys.forEach((key) => {
+    localMessageEchoes.set(key, Date.now() + 15000);
+    setTimeout(() => {
+      const expiresAt = localMessageEchoes.get(key);
+      if (expiresAt && expiresAt <= Date.now()) localMessageEchoes.delete(key);
+    }, 16000).unref?.();
+  });
+}
+function wasLocalMessage(message) {
+  const keys = [message?.id, message?.clientMessageId].filter(Boolean).map(String);
+  for (const key of keys) {
+    const expiresAt = localMessageEchoes.get(key);
+    if (expiresAt) {
+      if (expiresAt > Date.now()) return true;
+      localMessageEchoes.delete(key);
+    }
+  }
+  return false;
+}
+
 function threadAllowed(socket, threadId) {
   if (socket.data.type === "customer") return threadId === `user_${socket.data.userId}`;
   if (socket.data.type === "guest") return threadId === socket.data.threadId;
@@ -61,7 +89,18 @@ function startChatChangeStream() {
       const doc = change.fullDocument;
       if (!doc || !Array.isArray(doc.messages) || !doc.messages.length) return;
       const m = doc.messages[doc.messages.length - 1];
-      emitMessage({ threadId: doc.threadId, id: String(m._id), from: m.from, text: m.text, ts: m.ts, readByCustomer: m.readByCustomer, readByAdmin: m.readByAdmin });
+      const payload = {
+        threadId: doc.threadId,
+        id: String(m._id),
+        clientMessageId: m.clientMessageId || null,
+        from: m.from,
+        text: m.text,
+        ts: m.ts,
+        readByCustomer: m.readByCustomer,
+        readByAdmin: m.readByAdmin,
+      };
+      if (wasLocalMessage(payload)) return;
+      emitMessage(payload);
     });
     stream.on("error", (err) => {
       logger.warn("chat_change_stream_stopped", { error: err.message });
@@ -174,6 +213,7 @@ function attachSocket(server) {
           readByCustomer: message.readByCustomer,
           readByAdmin: message.readByAdmin,
         };
+        rememberLocalMessage(payload);
         emitMessage(payload);
         ack({ ok: true, message: payload, thread });
       } catch (error) {

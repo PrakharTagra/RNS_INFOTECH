@@ -105,7 +105,7 @@ async function getDashboardSummary(req, res) {
       },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
           sales: { $sum: "$itemsTotal" },
         },
       },
@@ -118,16 +118,28 @@ async function getDashboardSummary(req, res) {
   const salesDelta = periodDelta(currentSales, previousSales);
   const ordersDelta = periodDelta(currentOrders, previousOrders);
   const customersDelta = periodDelta(currentCustomers, previousCustomers);
-  const pendingDelta = periodDelta(pendingOrders, previousPendingOrders);
+  // Pending orders are a current backlog, not a period flow. Comparing the
+  // current backlog with the number of pending orders created in the previous
+  // 30-day window is not a mathematically meaningful percentage.
+  const pendingCreatedLast30d = previousPendingOrders;
+
 
   const salesByDay = new Map(
     salesTrend.map((entry) => [entry._id, Number(entry.sales || 0)])
   );
+  // Build the seven local calendar dates in the same timezone used by the
+  // MongoDB aggregation so orders around midnight are assigned correctly.
+  const localNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const localWeekStart = new Date(localNow.getTime() - 6 * DAY_MS);
   const salesTrendData = Array.from({ length: 7 }, (_, offset) => {
-    const date = new Date(weekStart.getTime() + offset * DAY_MS);
-    const key = date.toISOString().slice(0, 10);
+    const date = new Date(localWeekStart.getTime() + offset * DAY_MS);
+    const key = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
     return {
-      day: date.toLocaleDateString("en-IN", { weekday: "short" }),
+      day: date.toLocaleDateString("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" }),
       sales: salesByDay.get(key) || 0,
     };
   });
@@ -157,8 +169,8 @@ async function getDashboardSummary(req, res) {
     {
       label: "Pending orders",
       value: String(pendingOrders),
-      delta: pendingDelta.text,
-      deltaDirection: pendingDelta.direction,
+      delta: `${pendingCreatedLast30d} created in the previous 30d`,
+      deltaDirection: "flat",
       icon: "inbox",
     },
     {

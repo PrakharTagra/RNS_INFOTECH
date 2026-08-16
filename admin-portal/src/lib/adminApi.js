@@ -88,8 +88,12 @@ export async function adminLogin(email, password) {
   return payload;
 }
 
-export async function getAdminAccessToken() {
-  if (accessToken) return accessToken;
+export async function getAdminAccessToken({ forceRefresh = false } = {}) {
+  if (!forceRefresh && accessToken) return accessToken;
+  return refreshAccessToken();
+}
+
+export async function refreshAdminAccessToken() {
   return refreshAccessToken();
 }
 
