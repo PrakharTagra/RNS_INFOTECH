@@ -10,6 +10,14 @@ function getTransporter() {
     port: env.smtpPort,
     secure: env.smtpPort === 465,
     auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPass } : undefined,
+    // Nodemailer's defaults let a blocked/black-holed outbound connection
+    // hang for up to 2 minutes before failing, which just makes diagnosing
+    // provider-level port blocking (common on free PaaS tiers) painfully
+    // slow. Fail fast instead so a stuck connection surfaces as a clear
+    // error within seconds, not minutes.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 10_000,
   });
   return transporter;
 }
