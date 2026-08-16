@@ -16,6 +16,7 @@ import { OrdersProvider } from "./context/OrdersContext";
 import { AddressProvider } from "./context/AddressContext";
 import { LiveChatProvider } from "./context/LiveChatContext";
 import { ToastProvider } from "./context/ToastContext";
+import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 
 // Route-level code splitting — every page is its own chunk, so the
 // initial bundle only pays for the shell (nav/footer/context) plus
@@ -70,6 +71,7 @@ function RouteShell({ children }) {
 
 export default function App() {
   return (
+    <SiteSettingsProvider>
     <AuthProvider>
       <AddressProvider>
         <OrdersProvider>
@@ -159,5 +161,6 @@ export default function App() {
         </OrdersProvider>
       </AddressProvider>
     </AuthProvider>
+    </SiteSettingsProvider>
   );
 }

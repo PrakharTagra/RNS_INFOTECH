@@ -8,7 +8,8 @@ import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 import { SectionHeader } from "./components/SectionHeader";
 
-import { announcement, nav, footer, support, requestQuote } from "./data/siteData";
+import { announcement, nav, footer, requestQuote } from "./data/siteData";
+import { useSiteSettings } from "./context/SiteSettingsContext";
 import { submitLead } from "./lib/api";
 import { useToast } from "./context/ToastContext";
 
@@ -31,6 +32,7 @@ const emptyForm = {
  * HelpPage's and DemoPage's forms do.
  */
 export default function RequestQuotePage() {
+  const { support } = useSiteSettings();
   const [searchParams] = useSearchParams();
   const prefillProduct = searchParams.get("product") || "";
 

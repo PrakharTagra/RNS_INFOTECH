@@ -6,7 +6,8 @@ import Footer from "./components/Footer";
 import CTASection from "./components/CTASection";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer, support } from "./data/siteData";
+import { announcement, nav, footer } from "./data/siteData";
+import { useSiteSettings } from "./context/SiteSettingsContext";
 import { getPolicyContent } from "./lib/contentApi";
 import { ErrorState } from "./components/ui/Stateviews";
 
@@ -18,6 +19,7 @@ import { ErrorState } from "./components/ui/Stateviews";
  * link and HelpPage's warranty quick-link both point to as of Phase 6.
  */
 export default function WarrantyPage() {
+  const { support } = useSiteSettings();
   const [policy, setPolicy] = useState(null);
   const [policyError, setPolicyError] = useState(null);
 

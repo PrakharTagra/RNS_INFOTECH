@@ -15,16 +15,25 @@ const SORT_OPTIONS = {
 // the storefront nav renders every active category at once, and category
 // counts stay small enough that this never needs it.
 const listCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 });
+  const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 }).lean();
   res.json({ items: categories });
 });
 
 // GET /api/categories/:slug — public
 const getCategoryBySlug = asyncHandler(async (req, res) => {
-  const category = await Category.findOne({ slug: req.params.slug, isActive: true });
+  const category = await Category.findOne({ slug: req.params.slug, isActive: true }).lean();
   if (!category) throw ApiError.notFound("Category not found.");
   res.json({ category });
 });
+
+// discountPercent is a Mongoose virtual on Product — .lean() (used below
+// for read-only public queries) skips virtuals, so it's computed here
+// instead to keep the response shape identical.
+function withDiscountPercent(product) {
+  if (!product) return product;
+  const discountPercent = product.mrp && product.mrp > product.price ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
+  return { ...product, discountPercent };
+}
 
 // GET /api/products — public list/filter/sort/paginate/search
 const listProducts = asyncHandler(async (req, res) => {
@@ -55,18 +64,19 @@ const listProducts = asyncHandler(async (req, res) => {
       .populate("category", "name slug")
       .sort(SORT_OPTIONS[sort] || SORT_OPTIONS.newest)
       .skip((page - 1) * limit)
-      .limit(limit),
+      .limit(limit)
+      .lean(),
     Product.countDocuments(filter),
   ]);
 
-  res.json({ items, page, limit, total, totalPages: Math.ceil(total / limit) });
+  res.json({ items: items.map(withDiscountPercent), page, limit, total, totalPages: Math.ceil(total / limit) });
 });
 
 // GET /api/products/:slug — public detail
 const getProductBySlug = asyncHandler(async (req, res) => {
-  const product = await Product.findOne({ slug: req.params.slug, isActive: true }).populate("category", "name slug");
+  const product = await Product.findOne({ slug: req.params.slug, isActive: true }).populate("category", "name slug").lean();
   if (!product) throw ApiError.notFound("Product not found.");
-  res.json({ product });
+  res.json({ product: withDiscountPercent(product) });
 });
 
 module.exports = { listCategories, getCategoryBySlug, listProducts, getProductBySlug };

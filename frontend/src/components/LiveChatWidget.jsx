@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
 import { useLiveChat } from "../context/LiveChatContext";
-import { support } from "../data/siteData";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -25,6 +25,7 @@ function formatDay(ts) {
  */
 export default function LiveChatWidget() {
   const { open, closeChat, messages, sendMessage } = useLiveChat();
+  const { support } = useSiteSettings();
   const [draft, setDraft] = useState("");
   const listRef = useRef(null);
 

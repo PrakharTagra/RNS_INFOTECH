@@ -7,7 +7,8 @@ import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 import { SectionHeader } from "./components/SectionHeader";
 
-import { announcement, nav, footer, support, demo } from "./data/siteData";
+import { announcement, nav, footer, demo } from "./data/siteData";
+import { useSiteSettings } from "./context/SiteSettingsContext";
 import { submitLead } from "./lib/api";
 import { useToast } from "./context/ToastContext";
 
@@ -29,6 +30,7 @@ const emptyForm = {
  * HelpPage's contact form does: no backend, just a simulated send.
  */
 export default function DemoPage() {
+  const { support } = useSiteSettings();
   const [form, setForm] = useState(emptyForm);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
