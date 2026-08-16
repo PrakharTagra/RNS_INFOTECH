@@ -8,6 +8,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const otpService = require("../services/otp.service");
 const { sendOtpEmail } = require("../services/email.service");
 const { issueTokenPair, verifyRefreshToken } = require("../services/token.service");
+const logger = require("../utils/logger");
 
 const REFRESH_HASH_ROUNDS = 10;
 
@@ -37,7 +38,15 @@ const requestOtp = asyncHandler(async (req, res) => {
     if (err.code === 11000) throw ApiError.conflict("Please wait before requesting another code.", { code: "OTP_COOLDOWN" });
     throw err;
   }
-  await sendOtpEmail(email, code);
+  // Don't block the HTTP response on the SMTP round trip — Gmail (or any
+  // provider) can take anywhere from a few hundred ms to its full
+  // connection-timeout ceiling to accept/reject a message, which is far
+  // longer than a sane request timeout on the frontend. queueEmail() already
+  // persists an EmailLog row and the background queue worker retries on
+  // failure, so it's safe to let this run after we've responded.
+  sendOtpEmail(email, code).catch((err) => {
+    logger.error(`[auth] failed to queue OTP email for ${email}: ${err.message}`);
+  });
 
   res.json({
     message: "Verification code sent.",
