@@ -44,8 +44,21 @@ const getWebsite = asyncHandler(async (req, res) => {
   res.json({ website: { ...WEBSITE_DEFAULTS, ...homepage } });
 });
 
+const STORE_PROFILE_PUBLIC_FIELDS = ["name", "email", "phone", "whatsapp", "hours", "address", "city", "state", "pincode", "country"];
+
+const getStoreProfile = asyncHandler(async (req, res) => {
+  const settings = await SiteSettings.findOne({ key: "global" }).lean();
+  const storeProfile = settings?.storeProfile || {};
+  const publicProfile = STORE_PROFILE_PUBLIC_FIELDS.reduce((acc, field) => {
+    acc[field] = storeProfile[field] || "";
+    return acc;
+  }, {});
+  res.set("Cache-Control", "no-store");
+  res.json({ storeProfile: publicProfile });
+});
+
 const listFaqs = asyncHandler(async (req, res) => {
-  const items = await Faq.find({ isPublished: true }).sort({ sortOrder: 1, createdAt: -1 });
+  const items = await Faq.find({ isPublished: true }).sort({ sortOrder: 1, createdAt: -1 }).lean();
   res.json({ items: items.map((item) => ({ ...item, id: String(item._id), q: item.question, a: item.answer })) });
 });
 
@@ -77,4 +90,4 @@ const getPolicy = asyncHandler(async (req, res) => {
   res.json({ policy: { key: doc.key, ...content, publishedAt: doc.publishedAt || null } });
 });
 
-module.exports = { listFlashMessages, getWebsite, listFaqs, listBlogPosts, getBlogPost, getPolicy };
+module.exports = { listFlashMessages, getWebsite, getStoreProfile, listFaqs, listBlogPosts, getBlogPost, getPolicy };

@@ -9,7 +9,8 @@ import SEO from "./components/SEO";
 import FAQs from "./components/FAQs";
 import { useLiveChat } from "./context/LiveChatContext";
 
-import { announcement, nav, footer, support } from "./data/siteData";
+import { announcement, nav, footer } from "./data/siteData";
+import { useSiteSettings } from "./context/SiteSettingsContext";
 import { getFaqContent } from "./lib/contentApi";
 import { submitLead } from "./lib/api";
 import { useToast } from "./context/ToastContext";
@@ -50,6 +51,7 @@ function ContactCard({ icon, title, description, action }) {
  * in the app.
  */
 export default function HelpPage() {
+  const { support } = useSiteSettings();
   const [faqs, setFaqs] = useState([]);
   const [faqError, setFaqError] = useState(null);
 

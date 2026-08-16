@@ -62,4 +62,11 @@ productSchema.virtual("discountPercent").get(function computeDiscountPercent() {
 // admin-backend's index definition since they're the same collection.
 productSchema.index({ name: "text", description: "text", tags: "text" });
 
+// listProducts always filters on isActive and, absent an explicit sort,
+// orders by createdAt desc ("newest") — this compound index covers that
+// default path. isFeatured is also a common filter (homepage/featured
+// rails), hence the second index.
+productSchema.index({ isActive: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, isFeatured: 1 });
+
 module.exports = mongoose.model("Product", productSchema);

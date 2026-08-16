@@ -5,6 +5,7 @@ const router = Router();
 
 router.get("/flash-messages", contentController.listFlashMessages);
 router.get("/website", contentController.getWebsite);
+router.get("/store-profile", contentController.getStoreProfile);
 router.get("/faqs", contentController.listFaqs);
 router.get("/blog", contentController.listBlogPosts);
 router.get("/blog/:slug", validateParamPattern("slug", /^[a-z0-9]+(?:-[a-z0-9]+)*$/), contentController.getBlogPost);

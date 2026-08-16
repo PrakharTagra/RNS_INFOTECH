@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "./Icon";
-import { support } from "../data/siteData";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useToast } from "../context/ToastContext";
 import { submitLead } from "../lib/api";
 
@@ -120,6 +120,7 @@ function NewsletterForm({ newsletter }) {
 }
 
 export default function Footer({ logo, about, columns, legal, newsletter, social, whyChooseUs = [] }) {
+  const { support } = useSiteSettings();
   return (
     <footer style={{ background: "var(--rns-bg-ink)", color: "#c7cbd6", position: "relative" }}>
       <div

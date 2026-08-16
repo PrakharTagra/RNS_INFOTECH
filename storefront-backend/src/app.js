@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const compression = require("compression");
 
 const { env } = require("./config/env");
 const routes = require("./routes");
@@ -29,6 +30,7 @@ function createApp() {
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     hsts: env.nodeEnv === "production" ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
   }));
+  app.use(compression());
   app.use(
     cors({
       origin: (origin, callback) => {
