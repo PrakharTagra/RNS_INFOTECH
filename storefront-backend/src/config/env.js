@@ -1,7 +1,7 @@
 const { loadEnvironment } = require("./loadEnv");
 const appEnv = loadEnvironment();
-const required = ["MONGO_URI","CORS_ORIGIN","JWT_ACCESS_SECRET","JWT_REFRESH_SECRET","JWT_ACCESS_TTL","JWT_REFRESH_TTL","OTP_TTL_MINUTES","OTP_RESEND_COOLDOWN_SECONDS","OTP_MAX_ATTEMPTS","OTP_DEBUG_ECHO","PORT","SMTP_PORT","EMAIL_FROM"];
-const requiredInProduction = ["MONGO_URI","JWT_ACCESS_SECRET","JWT_REFRESH_SECRET","RAZORPAY_KEY_ID","RAZORPAY_KEY_SECRET","RAZORPAY_WEBHOOK_SECRET","SMTP_HOST","EMAIL_FROM"];
+const required = ["MONGO_URI","CORS_ORIGIN","JWT_ACCESS_SECRET","JWT_REFRESH_SECRET","JWT_ACCESS_TTL","JWT_REFRESH_TTL","OTP_TTL_MINUTES","OTP_RESEND_COOLDOWN_SECONDS","OTP_MAX_ATTEMPTS","OTP_DEBUG_ECHO","PORT","EMAIL_FROM"];
+const requiredInProduction = ["MONGO_URI","JWT_ACCESS_SECRET","JWT_REFRESH_SECRET","RAZORPAY_KEY_ID","RAZORPAY_KEY_SECRET","RAZORPAY_WEBHOOK_SECRET","RESEND_API_KEY","EMAIL_FROM"];
 const corsOrigin = (process.env.CORS_ORIGIN || "").split(",").map((x) => x.trim()).filter(Boolean);
 const env = {
   appEnv, exposeErrorStacks: process.env.EXPOSE_ERROR_STACKS === "true", nodeEnv: process.env.NODE_ENV || (appEnv === "production" || appEnv === "staging" ? "production" : appEnv),
@@ -13,7 +13,7 @@ const env = {
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || "", razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
   emailMaxAttempts: Math.max(1, Number(process.env.EMAIL_MAX_ATTEMPTS || 5)),
   emailRetryIntervalSeconds: Math.max(10, Number(process.env.EMAIL_RETRY_INTERVAL_SECONDS || 30)), razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
-  smtpHost: process.env.SMTP_HOST || "", smtpPort: Number(process.env.SMTP_PORT), smtpUser: process.env.SMTP_USER || "", smtpPass: process.env.SMTP_PASS || "", emailFrom: process.env.EMAIL_FROM,
+  resendApiKey: process.env.RESEND_API_KEY || "", emailFrom: process.env.EMAIL_FROM,
   // Where newsletter/demo/contact/quote form notifications go (see
   // lead.controller.js) - optional, falls back to EMAIL_FROM if unset so
   // this never needs a new required env var to work.
@@ -43,7 +43,6 @@ function assertEnv() {
   if (!Number.isFinite(env.otpTtlMinutes) || env.otpTtlMinutes <= 0) throw new Error("OTP_TTL_MINUTES must be greater than 0.");
   if (!Number.isFinite(env.otpResendCooldownSeconds) || env.otpResendCooldownSeconds < 0) throw new Error("OTP_RESEND_COOLDOWN_SECONDS must be 0 or greater.");
   if (!Number.isFinite(env.otpMaxAttempts) || env.otpMaxAttempts < 1) throw new Error("OTP_MAX_ATTEMPTS must be at least 1.");
-  if (!Number.isFinite(env.smtpPort) || env.smtpPort < 1 || env.smtpPort > 65535) throw new Error("SMTP_PORT must be a valid TCP port.");
   if (env.nodeEnv === "production") {
     const missingProd = requiredInProduction.filter((k) => !process.env[k]);
     if (missingProd.length) throw new Error(`Missing required production environment variables: ${missingProd.join(", ")}`);
