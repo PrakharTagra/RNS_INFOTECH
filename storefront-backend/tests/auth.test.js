@@ -1,0 +1,140 @@
+const request = require("supertest");
+
+jest.mock("../src/models/User");
+jest.mock("../src/models/Otp");
+jest.mock("../src/services/email.service");
+
+const createApp = require("../src/app");
+const User = require("../src/models/User");
+const Otp = require("../src/models/Otp");
+const otpService = require("../src/services/otp.service");
+const { signAccessToken } = require("../src/services/token.service");
+
+const app = createApp();
+
+describe("POST /api/auth/request-otp", () => {
+  it("rejects an invalid email with 400", async () => {
+    const res = await request(app).post("/api/auth/request-otp").send({ email: "not-an-email" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/validation failed/i);
+  });
+
+  it("creates an OTP and echoes the dev code outside production", async () => {
+    Otp.findOne.mockReturnValue({ sort: jest.fn().mockResolvedValue(null) });
+    Otp.create.mockResolvedValue({});
+
+    const res = await request(app).post("/api/auth/request-otp").send({ email: "shopper@example.com" });
+
+    expect(res.status).toBe(200);
+    expect(Otp.create).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "shopper@example.com" })
+    );
+    expect(res.body.devCode).toMatch(/^\d{6}$/);
+  });
+
+  it("blocks a resend within the cooldown window with 409", async () => {
+    Otp.findOne.mockReturnValue({
+      sort: jest.fn().mockResolvedValue({ createdAt: new Date() }),
+    });
+
+    const res = await request(app).post("/api/auth/request-otp").send({ email: "shopper@example.com" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("OTP_COOLDOWN");
+  });
+});
+
+describe("POST /api/auth/verify-otp", () => {
+  it("rejects a malformed code with 400", async () => {
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email: "shopper@example.com", code: "abc" });
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when there's no live OTP for that email", async () => {
+    Otp.findOne.mockReturnValue({ sort: jest.fn().mockResolvedValue(null) });
+
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email: "shopper@example.com", code: "123456" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("OTP_NOT_FOUND");
+  });
+
+  it("issues tokens and creates a user on a correct code", async () => {
+    const codeHash = await otpService.hashCode("123456");
+    const otpDoc = {
+      email: "shopper@example.com",
+      codeHash,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      save: jest.fn().mockResolvedValue(true),
+    };
+    Otp.findOne.mockReturnValue({ sort: jest.fn().mockResolvedValue(otpDoc) });
+
+    User.findOne.mockResolvedValue(null);
+    const savedUser = {
+      _id: "user123",
+      email: "shopper@example.com",
+      name: "",
+      isVerified: true,
+      save: jest.fn().mockResolvedValue(true),
+    };
+    User.create.mockResolvedValue(savedUser);
+
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email: "shopper@example.com", code: "123456" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.accessToken).toEqual(expect.any(String));
+    expect(res.body.refreshToken).toEqual(expect.any(String));
+    expect(otpDoc.consumedAt).not.toBeNull();
+    expect(savedUser.save).toHaveBeenCalled();
+  });
+
+  it("increments attempts and returns 401 on an incorrect code", async () => {
+    const codeHash = await otpService.hashCode("111111");
+    const otpDoc = {
+      email: "shopper@example.com",
+      codeHash,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      save: jest.fn().mockResolvedValue(true),
+    };
+    Otp.findOne.mockReturnValue({ sort: jest.fn().mockResolvedValue(otpDoc) });
+
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email: "shopper@example.com", code: "222222" });
+
+    expect(res.status).toBe(401);
+    expect(otpDoc.attempts).toBe(1);
+  });
+});
+
+describe("GET /api/auth/me", () => {
+  it("rejects a request with no Authorization header", async () => {
+    const res = await request(app).get("/api/auth/me");
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a malformed/invalid token", async () => {
+    const res = await request(app).get("/api/auth/me").set("Authorization", "Bearer not-a-real-token");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns the user for a valid access token", async () => {
+    const token = signAccessToken("user123");
+    User.findById.mockResolvedValue({ _id: "user123", email: "shopper@example.com" });
+
+    const res = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.email).toBe("shopper@example.com");
+  });
+});
