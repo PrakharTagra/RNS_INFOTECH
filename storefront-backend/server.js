@@ -1,3 +1,12 @@
+const dns = require("dns");
+// Node 17+ defaults DNS lookups to "verbatim" ordering, which returns
+// whichever address family the resolver hands back first — on hosts like
+// Render's containers that advertise an AAAA (IPv6) record for
+// smtp.gmail.com but don't actually have working IPv6 egress, this makes
+// outbound SMTP connections fail immediately with ENETUNREACH. Forcing
+// ipv4first here (Node 18+) makes DNS resolution consistently prefer IPv4,
+// which is what the network here can actually route.
+dns.setDefaultResultOrder("ipv4first");
 
 const createApp = require("./src/app");
 const { connectDB } = require("./src/config/db");
