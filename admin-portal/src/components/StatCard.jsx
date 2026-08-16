@@ -30,7 +30,9 @@ export default function StatCard({ label, value, delta, deltaDirection = "up", i
       </div>
       {delta && (
         <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: deltaColor }}>
-          <Icon name={deltaDirection === "up" ? "arrowUp" : "arrowDown"} size={12} />
+          {deltaDirection !== "flat" && (
+            <Icon name={deltaDirection === "up" ? "arrowUp" : "arrowDown"} size={12} />
+          )}
           {delta}
         </div>
       )}

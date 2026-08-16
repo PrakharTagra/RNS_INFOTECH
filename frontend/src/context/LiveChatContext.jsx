@@ -1,69 +1,88 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthContext";
-import { getOrCreateGuestId, getOrCreateThread, sendMessage, markRead, subscribeToChatUpdates } from "../lib/chatService";
+import {
+  getOrCreateGuestId,
+  getOrCreateThread,
+  sendMessage,
+  markRead,
+  subscribeToChatUpdates,
+} from "../lib/chatService";
 
 const LiveChatContext = createContext(null);
 
-/**
- * LiveChatProvider — a real customer-support chat thread (not a bot).
- * Each visitor gets one thread via the real backend API. For authenticated
- * users, the thread is keyed by their account ID; for guests, it's a
- * persisted guest ID (stored in localStorage). Messages are fetched via
- * polling (every 5 seconds) to pick up responses from support staff.
- */
 export function LiveChatProvider({ children }) {
-  const { currentUser } = useAuth();
+  const { currentUser, hydrated } = useAuth();
   const [open, setOpen] = useState(false);
   const [thread, setThread] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [chatError, setChatError] = useState(null);
 
-  // Build the thread ID: user_<id> for logged-in users, guest_<id> for guests
   const threadId = useMemo(
     () => (currentUser ? `user_${currentUser.id}` : `guest_${getOrCreateGuestId()}`),
     [currentUser]
   );
 
-  // Initialize the thread on mount or when currentUser changes
+  // Chat is deliberately initialized only after the visitor opens it.
+  // The widget button remains available, but the initial storefront load
+  // does not create a chat thread, open a socket, or make chat requests.
   useEffect(() => {
-    const initThread = async () => {
-      try {
-        setLoading(true);
-        setChatError(null);
-        const fetchedThread = await getOrCreateThread(
-          threadId,
-          currentUser?.name || "Guest",
-          currentUser?.email || ""
-        );
-        setThread(fetchedThread);
-      } catch (error) {
+    if (!open || !hydrated) return undefined;
+
+    let active = true;
+    setLoading(true);
+    setChatError(null);
+
+    getOrCreateThread(
+      threadId,
+      currentUser?.name || "Guest",
+      currentUser?.email || ""
+    )
+      .then((nextThread) => {
+        if (active) setThread(nextThread);
+      })
+      .catch((error) => {
+        if (!active) return;
         console.error("Failed to initialize chat thread:", error);
         setChatError(error);
         setThread(null);
-      } finally {
-        setLoading(false);
-      }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
     };
+  }, [open, hydrated, threadId, currentUser?.name, currentUser?.email]);
 
-    initThread();
-  }, [threadId, currentUser]);
-
-  // Poll for new messages periodically
   useEffect(() => {
-    if (!thread) return;
-    const unsubscribe = subscribeToChatUpdates(threadId, setThread);
-    return unsubscribe;
-  }, [threadId, thread]);
+    if (!open || !thread) return undefined;
+    return subscribeToChatUpdates(threadId, (update) => {
+      setThread((current) => {
+        if (!current) return update;
+        // Socket payloads are single messages; reconnect payloads are full
+        // threads. Merge them without duplicating an already persisted id.
+        if (Array.isArray(update.messages)) return update;
+        if (!update.id) return current;
+        if (current.messages.some((message) => message.id === update.id)) return current;
+        return {
+          ...current,
+          messages: [...current.messages, update],
+          updatedAt: update.ts || current.updatedAt,
+        };
+      });
+    });
+  }, [open, threadId, Boolean(thread)]);
 
-  // Mark messages as read when chat opens
   useEffect(() => {
     if (!open || !thread) return;
     const hasUnread = thread.messages.some((m) => m.from === "admin" && !m.readByCustomer);
     if (hasUnread) {
-      markRead(threadId).then(setThread).catch((error) => console.warn("Failed to mark chat read:", error));
+      markRead(threadId)
+        .then(setThread)
+        .catch((error) => console.warn("Failed to mark chat read:", error));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, threadId, thread?.messages]);
 
   const unreadCount = useMemo(
     () => (thread?.messages || []).filter((m) => m.from === "admin" && !m.readByCustomer).length,
@@ -75,7 +94,7 @@ export function LiveChatProvider({ children }) {
       open,
       openChat: () => setOpen(true),
       closeChat: () => setOpen(false),
-      toggleChat: () => setOpen((o) => !o),
+      toggleChat: () => setOpen((value) => !value),
       messages: thread?.messages || [],
       unreadCount,
       loading,
@@ -83,14 +102,15 @@ export function LiveChatProvider({ children }) {
       sendMessage: async (text) => {
         if (!text.trim() || !thread) return;
         try {
-          const updatedThread = await sendMessage(threadId, text, "customer");
+          const updatedThread = await sendMessage(threadId, text);
           setThread(updatedThread);
         } catch (error) {
           console.error("Failed to send message:", error);
+          setChatError(error);
         }
       },
     }),
-    [open, thread, unreadCount, threadId, loading]
+    [open, thread, unreadCount, threadId, loading, chatError]
   );
 
   return <LiveChatContext.Provider value={api}>{children}</LiveChatContext.Provider>;

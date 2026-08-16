@@ -68,5 +68,6 @@ productSchema.index({ name: "text", description: "text", tags: "text" });
 // rails), hence the second index.
 productSchema.index({ isActive: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, isFeatured: 1 });
+productSchema.index({ isActive: 1, stock: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

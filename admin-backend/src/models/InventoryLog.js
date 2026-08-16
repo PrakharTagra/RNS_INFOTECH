@@ -21,4 +21,6 @@ const inventoryLogSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { transform(doc, ret) { delete ret.__v; return ret; } } }
 );
 
+inventoryLogSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model("InventoryLog", inventoryLogSchema);

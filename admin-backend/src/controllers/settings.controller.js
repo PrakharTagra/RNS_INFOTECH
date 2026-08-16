@@ -18,6 +18,7 @@ async function getSettingsDocument() {
 
 const getStoreProfile = asyncHandler(async (req, res) => {
   const settings = await getSettingsDocument();
+  res.set("Cache-Control", "no-store");
   res.json({ storeProfile: settings.storeProfile });
 });
 
@@ -25,6 +26,7 @@ const updateStoreProfile = asyncHandler(async (req, res) => {
   const settings = await getSettingsDocument();
   settings.storeProfile = { ...settings.storeProfile, ...(req.body || {}) };
   await settings.save();
+  res.set("Cache-Control", "no-store");
   res.json({ storeProfile: settings.storeProfile });
 });
 

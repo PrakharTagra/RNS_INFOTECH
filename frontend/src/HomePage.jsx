@@ -45,7 +45,7 @@ export default function HomePage() {
 
     async function load() {
       const [catalogResult, websiteResult] = await Promise.allSettled([
-        Promise.all([apiRequest("/categories"), apiRequest("/products?page=1&limit=24")]),
+        Promise.all([apiRequest("/categories"), apiRequest("/products?page=1&limit=8&featured=true")]),
         Promise.all([apiRequest("/website"), getFaqContent()]),
       ]);
 

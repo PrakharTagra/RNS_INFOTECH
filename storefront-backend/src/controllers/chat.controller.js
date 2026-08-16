@@ -11,15 +11,25 @@ function assertThreadAccess(req, threadId) {
 }
 
 const createThread = asyncHandler(async (req, res) => {
-  const { threadId, customerName, customerEmail } = req.body;
+  const { threadId } = req.body;
   if (!threadId) throw ApiError.badRequest("threadId is required.");
   let chatToken = null;
+  let resolvedCustomerName = "Guest";
+  let resolvedCustomerEmail = "";
+
   if (req.auth?.userId) {
     if (threadId !== `user_${req.auth.userId}`) throw ApiError.forbidden("Invalid chat thread.");
+    const user = await User.findById(req.auth.userId).select("name email").lean();
+    if (!user) throw ApiError.unauthorized("Authenticated customer account was not found.");
+    resolvedCustomerName = String(user.name || "").trim() || String(user.email || "").trim() || "Customer";
+    resolvedCustomerEmail = String(user.email || "").trim().toLowerCase();
   } else {
     if (!threadId.startsWith("guest_")) throw ApiError.forbidden("Invalid guest chat thread.");
     chatToken = signGuestChatToken(threadId);
+    resolvedCustomerName = "Guest";
+    resolvedCustomerEmail = "";
   }
+
   const existing = await ChatThread.findOne({ threadId });
   if (existing) {
     // For authenticated customers, the thread is a permanent record tied
@@ -32,10 +42,10 @@ const createThread = asyncHandler(async (req, res) => {
     // otherwise a thread created as "Guest" stays "Guest" forever, even
     // once we know exactly who the customer is.
     if (req.auth?.userId) {
-      const nextName = (customerName || "").trim();
-      const nextEmail = (customerEmail || "").trim();
+      const nextName = resolvedCustomerName;
+      const nextEmail = resolvedCustomerEmail;
       const needsNameUpdate = nextName && nextName !== existing.customerName;
-      const needsEmailUpdate = nextEmail && nextEmail !== existing.customerEmail;
+      const needsEmailUpdate = nextEmail !== existing.customerEmail;
       if (needsNameUpdate || needsEmailUpdate) {
         if (needsNameUpdate) existing.customerName = nextName;
         if (needsEmailUpdate) existing.customerEmail = nextEmail;
@@ -44,7 +54,13 @@ const createThread = asyncHandler(async (req, res) => {
     }
     return res.status(200).json({ thread: normalizedThread(existing), chatToken });
   }
-  const thread = await ChatThread.create({ threadId, customerName: customerName || "Guest", customerEmail: customerEmail || "", status: "open", messages: [] });
+  const thread = await ChatThread.create({
+    threadId,
+    customerName: resolvedCustomerName,
+    customerEmail: resolvedCustomerEmail,
+    status: "open",
+    messages: [],
+  });
   res.status(201).json({ thread, chatToken });
 });
 
@@ -52,9 +68,19 @@ const appendMessage = asyncHandler(async (req, res) => {
   const { threadId } = req.params;
   assertThreadAccess(req, threadId);
   const text = String(req.body.text || "").trim();
+  const clientMessageId = req.body.clientMessageId || null;
   if (!text) throw ApiError.badRequest("Message text is required.");
   const from = "customer";
-  const message = { from, text, ts: new Date(), readByCustomer: true, readByAdmin: false };
+
+  if (clientMessageId) {
+    const existing = await ChatThread.findOne({ threadId, "messages.clientMessageId": clientMessageId });
+    if (existing) {
+      res.status(200).json({ thread: existing });
+      return;
+    }
+  }
+
+  const message = { from, text, clientMessageId, ts: new Date(), readByCustomer: true, readByAdmin: false };
   let thread = await ChatThread.findOneAndUpdate({ threadId, status: "open" }, { $push: { messages: message }, $set: { updatedAt: new Date() } }, { new: true, runValidators: true });
   if (thread === undefined) {
     thread = await ChatThread.findOne({ threadId });

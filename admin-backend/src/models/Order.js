@@ -129,6 +129,10 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ user: 1, createdAt: -1 });
+
 orderSchema.statics.ORDER_STATUSES = ORDER_STATUSES;
 
 module.exports = mongoose.model("Order", orderSchema);

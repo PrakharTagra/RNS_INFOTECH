@@ -4,6 +4,7 @@ const messageSchema = new mongoose.Schema(
   {
     from: { type: String, enum: ["customer", "admin"], required: true },
     text: { type: String, required: true, trim: true },
+    clientMessageId: { type: String, trim: true, default: null },
     ts: { type: Date, default: Date.now },
     readByCustomer: { type: Boolean, default: false },
     readByAdmin: { type: Boolean, default: false },
@@ -29,5 +30,7 @@ const chatThreadSchema = new mongoose.Schema(
     },
   }
 );
+
+chatThreadSchema.index({ status: 1, updatedAt: -1 });
 
 module.exports = mongoose.model("ChatThread", chatThreadSchema);

@@ -78,5 +78,6 @@ productSchema.index({ name: "text", description: "text", tags: "text" });
 // newest" product listing and its isFeatured filter.
 productSchema.index({ isActive: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, isFeatured: 1 });
+productSchema.index({ isActive: 1, stock: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Icon from "../../components/Icon";
 import StatCard from "../../components/StatCard";
 import EmptyState from "../../components/EmptyState";
-import { getThreads, getChatStats, sendReply, markRead, subscribeToThreads, subscribeToThread } from "../../services/chatService";
+import { getThreads, getChatStats, sendReply, markRead } from "../../services/chatService";
 
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -29,56 +29,156 @@ export default function ChatPage() {
   const [threads, setThreads] = useState(null);
   const [stats, setStats] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedThread, setSelectedThread] = useState(null);
   const [draft, setDraft] = useState("");
   const messagesRef = useRef(null);
+  const threadsRef = useRef(null);
+
+  useEffect(() => {
+    threadsRef.current = threads;
+  }, [threads]);
 
   function refresh() {
-    getThreads({ q }).then(setThreads);
-    getChatStats().then(setStats);
+    Promise.all([getThreads({ q }), getChatStats()]).then(([nextThreads, nextStats]) => {
+      setThreads(nextThreads);
+      setStats(nextStats);
+    });
+  }
+
+  function applyRealtimeMessage(payload) {
+    if (payload?.type === "reconnected") {
+      refresh();
+      return;
+    }
+    if (!payload?.threadId || !payload?.id) return;
+
+    const message = {
+      id: String(payload.id),
+      from: payload.from,
+      text: payload.text || "",
+      ts: payload.ts ? new Date(payload.ts).getTime() : Date.now(),
+      readByCustomer: payload.readByCustomer === true,
+      readByAdmin: payload.readByAdmin === true,
+    };
+
+    const current = threadsRef.current;
+    if (!current) return;
+
+    const index = current.findIndex((thread) => thread.id === payload.threadId);
+    if (index === -1) {
+      getThreads({ q }).then(setThreads).catch(() => {});
+      return;
+    }
+
+    const existing = current[index];
+    if (existing.messages.some((item) => item.id === message.id)) return;
+
+    const next = {
+      ...existing,
+      messages: [...existing.messages, message],
+      last: message,
+      unread: existing.unread + (message.from === "customer" && !message.readByAdmin ? 1 : 0),
+      updatedAt: message.ts,
+    };
+
+    setSelectedThread((currentSelected) => {
+      if (!currentSelected || currentSelected.id !== payload.threadId || currentSelected.messages.some((item) => item.id === message.id)) {
+        return currentSelected;
+      }
+      return {
+        ...currentSelected,
+        messages: [...currentSelected.messages, message],
+        last: message,
+        unread: next.unread,
+        updatedAt: message.ts,
+      };
+    });
+
+    setThreads((latest) => {
+      if (!latest) return latest;
+      const latestIndex = latest.findIndex((thread) => thread.id === payload.threadId);
+      if (latestIndex === -1 || latest[latestIndex].messages.some((item) => item.id === message.id)) return latest;
+      const latestCopy = [...latest];
+      latestCopy.splice(latestIndex, 1);
+      latestCopy.unshift({ ...latest[latestIndex], ...next });
+      return latestCopy;
+    });    getChatStats().then(setStats).catch(() => {});
   }
 
   useEffect(() => {
+    setThreads(null);
     refresh();
-    const unsubscribe = subscribeToThreads(refresh);
+    const unsubscribe = subscribeToThreads(applyRealtimeMessage);
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   useEffect(() => {
-    if (!selectedId && threads && threads.length > 0) setSelectedId(threads[0].id);
+    if (!threads) return;
+    if (!selectedId && threads.length > 0) {
+      setSelectedId(threads[0].id);
+      return;
+    }
+    if (selectedId && !threads.some((thread) => thread.id === selectedId)) {
+      setSelectedId(threads[0]?.id || null);
+    }
   }, [threads, selectedId]);
 
-  const selected = useMemo(() => (threads || []).find((t) => t.id === selectedId) || null, [threads, selectedId]);
+  useEffect(() => {
+    if (!selectedId) {
+      setSelectedThread(null);
+      return undefined;
+    }
+    let active = true;
+    getThread(selectedId)
+      .then((thread) => {
+        if (active) setSelectedThread(thread);
+      })
+      .catch(() => {
+        if (active) setSelectedThread(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedId]);
+
+  const selected = selectedThread;
 
   useEffect(() => {
     if (!selected) return;
     if (selected.unread > 0) {
-      markRead(selected.id).then(refresh);
+      markRead(selected.id).then((updated) => {
+        if (!updated) return;
+        setThreads((current) => (current || []).map((thread) => thread.id === updated.id ? {
+          ...thread,
+          unread: 0,
+          messages: thread.messages,
+          last: thread.last,
+        } : thread));
+        setSelectedThread(updated);
+        getChatStats().then(setStats).catch(() => {});
+      });
     }
     if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id, selected?.messages?.length]);
 
-  useEffect(() => {
-    if (!selectedId) return undefined;
-    let disposed = false;
-    let cleanup;
-    subscribeToThread(selectedId, async () => {
-      const next = await getThreads({ q });
-      setThreads(next);
-    }).then((fn) => {
-      if (disposed) fn();
-      else cleanup = fn;
-    });
-    return () => { disposed = true; cleanup?.(); };
-  }, [selectedId, q]);
+
 
   async function handleSend(e) {
     e.preventDefault();
     if (!draft.trim() || !selected) return;
-    await sendReply(selected.id, draft);
+    const updated = await sendReply(selected.id, draft);
+    if (updated) {
+      setThreads((current) => (current || []).map((thread) => thread.id === updated.id ? {
+        ...thread,
+        last: updated.last,
+        updatedAt: updated.updatedAt,
+      } : thread));
+      setSelectedThread(updated);
+      getChatStats().then(setStats).catch(() => {});
+    }
     setDraft("");
-    refresh();
   }
 
   return (

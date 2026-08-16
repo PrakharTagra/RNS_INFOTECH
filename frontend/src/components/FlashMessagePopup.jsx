@@ -43,7 +43,7 @@ export default function FlashMessagePopup() {
     // Load messages on mount
     loadFlashMessages().then(setMessages);
     // Subscribe to updates (polling every 30s)
-    const unsubscribe = subscribeFlashMessages(() => loadFlashMessages().then(setMessages));
+    const unsubscribe = subscribeFlashMessages((nextMessages) => setMessages(nextMessages));
     return unsubscribe;
   }, []);
 

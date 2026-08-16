@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 const { env } = require("./env");
 const logger = require("../utils/logger");
 
@@ -39,8 +40,17 @@ function dbState() {
   return states[mongoose.connection.readyState] || "unknown";
 }
 
+function dbIdentity() {
+  const host = mongoose.connection.host || "";
+  const name = mongoose.connection.name || "";
+  if (!host && !name) return null;
+  // Safe comparison value only: never expose the MongoDB username/password
+  // or full connection string in a public health response.
+  return crypto.createHash("sha256").update(`${host}/${name}`).digest("hex").slice(0, 16);
+}
+
 function redact(uri) {
   return uri.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@");
 }
 
-module.exports = { connectDB, dbState };
+module.exports = { connectDB, dbState, dbIdentity };

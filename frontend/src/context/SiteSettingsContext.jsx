@@ -1,38 +1,49 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { getStoreProfileContent } from "../lib/contentApi";
 import { support as defaultSupport } from "../data/siteData";
 
 const SiteSettingsContext = createContext(null);
+const REFRESH_AFTER_MS = 30_000;
 
-/**
- * SiteSettingsProvider — fetches the admin-saved store profile
- * (name/email/phone/whatsapp/hours/address) once on app boot and
- * exposes it as `support` via useSiteSettings(). Falls back to the
- * static `support` object from siteData.js so a backend hiccup never
- * breaks the footer/contact/help pages — only fields the API actually
- * returns a value for override the defaults.
- */
 export function SiteSettingsProvider({ children }) {
   const [support, setSupport] = useState(defaultSupport);
+  const [lastFetchedAt, setLastFetchedAt] = useState(0);
+
+  const refresh = useCallback(async ({ force = false } = {}) => {
+    if (!force && Date.now() - lastFetchedAt < REFRESH_AFTER_MS) return support;
+    try {
+      const profile = await getStoreProfileContent();
+      if (profile) {
+        // The backend is authoritative. Merge all returned fields,
+        // including intentionally empty values, instead of filtering by
+        // truthiness and accidentally keeping stale static business data.
+        setSupport((current) => ({ ...current, ...profile }));
+      }
+      setLastFetchedAt(Date.now());
+      return profile;
+    } catch {
+      // Keep the last known good values when the API is temporarily down.
+      return null;
+    }
+  }, [lastFetchedAt, support]);
 
   useEffect(() => {
-    let cancelled = false;
-    getStoreProfileContent()
-      .then((profile) => {
-        if (cancelled || !profile) return;
-        const updates = Object.fromEntries(Object.entries(profile).filter(([, value]) => value));
-        if (Object.keys(updates).length === 0) return;
-        setSupport((current) => ({ ...current, ...updates }));
-      })
-      .catch(() => {
-        // Network/API hiccup — keep the static defaults already in state.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    refresh({ force: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <SiteSettingsContext.Provider value={{ support }}>{children}</SiteSettingsContext.Provider>;
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refresh]);
+
+  return <SiteSettingsContext.Provider value={{ support, refresh }}>{children}</SiteSettingsContext.Provider>;
 }
 
 export function useSiteSettings() {

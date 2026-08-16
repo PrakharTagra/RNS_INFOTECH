@@ -41,6 +41,7 @@ const WEBSITE_DEFAULTS = { hero: null, promo: null, whyChooseUs: [], solutions: 
 const getWebsite = asyncHandler(async (req, res) => {
   const settings = await SiteSettings.findOne({ key: "global" }).lean();
   const homepage = settings?.homepagePublished || settings?.homepage || {};
+  res.set("Cache-Control", "no-store");
   res.json({ website: { ...WEBSITE_DEFAULTS, ...homepage } });
 });
 

@@ -134,10 +134,17 @@ export async function adminApiUpload(path, formData, { onProgress, method = "POS
 }
 
 export async function getCurrentAdmin() {
+  // A page reload starts without the in-memory access token, but the
+  // refresh endpoint already returns the authenticated admin. Avoid the
+  // previous refresh -> /auth/me two-request startup sequence.
   if (!accessToken) {
     const refreshed = await refreshAccessToken();
     if (!refreshed) return null;
+    return admin || readStoredAdmin();
   }
+
+  if (admin) return admin;
+
   try {
     const payload = await adminApiRequest("/auth/me");
     if (payload?.admin) setStoredAdminAuth({ admin: payload.admin });

@@ -45,11 +45,19 @@ function scheduleChangeStreamRestart() {
 
 function startChatChangeStream() {
   try {
+    if (currentChangeStream) {
+      currentChangeStream.close().catch(() => {});
+      currentChangeStream = null;
+    }
     const stream = ChatThread.watch([], { fullDocument: "updateLookup" });
     if (!stream || typeof stream.on !== "function") return null;
     currentChangeStream = stream;
     stream.on("change", (change) => {
       changeStreamRestartAttempts = 0;
+      const changedFields = Object.keys(change.updateDescription?.updatedFields || {});
+      const messagesChanged = change.operationType === "insert" || change.operationType === "replace" ||
+        changedFields.some((field) => field === "messages" || field.startsWith("messages."));
+      if (!messagesChanged) return;
       const doc = change.fullDocument;
       if (!doc || !Array.isArray(doc.messages) || !doc.messages.length) return;
       const m = doc.messages[doc.messages.length - 1];
@@ -120,15 +128,57 @@ function attachSocket(server) {
       socket.join(`chat:${threadId}`);
       socket.data.threadId = threadId;
     });
-    socket.on("chat:message", async ({ threadId, text } = {}) => {
-      if (!threadId || !threadAllowed(socket, threadId) || !text || !String(text).trim()) return;
-      const message = { from: "customer", text: String(text).trim(), ts: new Date(), readByCustomer: true, readByAdmin: false };
-      let thread = await ChatThread.findOneAndUpdate({ threadId, status: "open" }, { $push: { messages: message }, $set: { updatedAt: new Date() } }, { new: true, runValidators: true });
-      if (thread === undefined) {
-        thread = await ChatThread.findOne({ threadId });
-        if (thread) { thread.messages.push(message); thread.updatedAt = new Date(); await thread.save(); }
+    socket.on("chat:leave", ({ threadId } = {}) => {
+      if (threadId) socket.leave(`chat:${threadId}`);
+    });
+    socket.on("chat:message", async ({ threadId, text, clientMessageId } = {}, ack = () => {}) => {
+      try {
+        if (!threadId || !threadAllowed(socket, threadId) || !text || !String(text).trim()) {
+          ack({ ok: false, error: "Invalid chat message." });
+          return;
+        }
+        const normalizedClientMessageId = typeof clientMessageId === "string" ? clientMessageId.trim() : null;
+        if (normalizedClientMessageId) {
+          const existing = await ChatThread.findOne({ threadId, "messages.clientMessageId": normalizedClientMessageId });
+          if (existing) {
+            ack({ ok: true, thread: existing, message: existing.messages.find((item) => item.clientMessageId === normalizedClientMessageId) });
+            return;
+          }
+        }
+        const message = { from: "customer", text: String(text).trim(), clientMessageId: normalizedClientMessageId, ts: new Date(), readByCustomer: true, readByAdmin: false };
+        let thread = await ChatThread.findOneAndUpdate(
+          { threadId, status: "open" },
+          { $push: { messages: message }, $set: { updatedAt: new Date() } },
+          { new: true, runValidators: true }
+        );
+        if (thread === undefined) {
+          thread = await ChatThread.findOne({ threadId });
+          if (thread) {
+            thread.messages.push(message);
+            thread.updatedAt = new Date();
+            await thread.save();
+          }
+        }
+        if (!thread) {
+          ack({ ok: false, error: "Chat thread not found or closed." });
+          return;
+        }
+        const persisted = thread.messages[thread.messages.length - 1];
+        const payload = {
+          threadId,
+          id: String(persisted?._id || Date.now()),
+          clientMessageId: message.clientMessageId || null,
+          from: message.from,
+          text: message.text,
+          ts: message.ts,
+          readByCustomer: message.readByCustomer,
+          readByAdmin: message.readByAdmin,
+        };
+        emitMessage(payload);
+        ack({ ok: true, message: payload, thread });
+      } catch (error) {
+        ack({ ok: false, error: error.message || "Unable to send message." });
       }
-      if (thread) emitMessage({ threadId, id: String(thread.messages[thread.messages.length - 1]._id || Date.now()), ...message });
     });
   });
   startChatChangeStream();
