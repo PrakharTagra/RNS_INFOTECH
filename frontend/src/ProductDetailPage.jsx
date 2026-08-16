@@ -15,7 +15,8 @@ import { useCompare } from "./context/CompareContext";
 import { useToast } from "./context/ToastContext";
 import { useAuth } from "./context/AuthContext";
 
-import { announcement, nav, footer, downloads, support } from "./data/siteData";
+import { announcement, nav, footer, downloads } from "./data/siteData";
+import { useSiteSettings } from "./context/SiteSettingsContext";
 import { apiRequest, normalizeProduct, normalizeReview } from "./lib/api";
 
 function formatINR(n) {
@@ -66,6 +67,7 @@ function Stars({ rating, size = 14, showValue = false, count }) {
  * data/siteData.js — swap the data source later without touching layout.
  */
 export default function ProductDetailPage() {
+  const { support } = useSiteSettings();
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();

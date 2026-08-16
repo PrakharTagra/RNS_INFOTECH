@@ -71,4 +71,12 @@ productSchema.virtual("discountPercent").get(function computeDiscountPercent() {
 // catalog.controller.js (storefront).
 productSchema.index({ name: "text", description: "text", tags: "text" });
 
+// Mirrors storefront-backend/src/models/Product.js — same physical
+// collection, so defined here too to keep both mongoose models' index
+// declarations in sync (avoid drift, even though MongoDB only needs the
+// index created once). Backs the storefront's default "isActive +
+// newest" product listing and its isFeatured filter.
+productSchema.index({ isActive: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, isFeatured: 1 });
+
 module.exports = mongoose.model("Product", productSchema);

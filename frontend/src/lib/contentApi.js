@@ -5,6 +5,11 @@ export async function getWebsiteContent() {
   return payload?.website || {};
 }
 
+export async function getStoreProfileContent() {
+  const payload = await apiRequest("/store-profile");
+  return payload?.storeProfile || {};
+}
+
 export async function getFaqContent() {
   const payload = await apiRequest("/faqs");
   return (payload?.items || []).map((item) => ({

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import AdminLayout from "./layouts/AdminLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -40,20 +40,59 @@ function RequireAdmin() {
   const location = useLocation();
   const navigate = useNavigate();
   const [status, setStatus] = useState("checking");
+  // Tracks the latest location without making it an effect dependency —
+  // the session check below only needs to run once per mount, but a
+  // redirect to /login (whenever it happens) should still carry the
+  // *current* location as `from`, not the one captured when the effect
+  // first ran.
+  const locationRef = useRef(location);
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  // navigate() from plain useNavigate() (non-data-router BrowserRouter,
+  // which is what this app uses) is memoized on
+  // [basename, navigator, routePathnamesJson, locationPathname, dataRouterContext]
+  // internally — locationPathname is in that list, so `navigate` gets a
+  // new identity on every route change. Using it as an effect dependency
+  // (even just [navigate]) therefore still reruns the effect on every
+  // navigation. Track it in a ref, same as location, so the mount-only
+  // effect below can depend on truly nothing.
+  const navigateRef = useRef(navigate);
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   useEffect(() => {
     let active = true;
+    const redirectToLogin = (reason) => {
+      const { pathname, search, hash } = locationRef.current;
+      navigateRef.current("/login", { replace: true, state: { from: `${pathname}${search}${hash}`, ...(reason ? { reason } : {}) } });
+    };
     const cleanupUnauthorized = onAdminUnauthorized(() => {
-      if (active) navigate("/login", { replace: true, state: { from: `${location.pathname}${location.search}${location.hash}`, reason: "session-expired" } });
+      if (active) redirectToLogin("session-expired");
     });
     setStatus("checking");
     getCurrentAdmin().then((admin) => {
       if (!active) return;
       if (admin) setStatus("authenticated");
-      else navigate("/login", { replace: true, state: { from: `${location.pathname}${location.search}${location.hash}` } });
+      else redirectToLogin();
     });
     return () => { active = false; cleanupUnauthorized(); };
-  }, [location.pathname, location.search, location.hash, navigate]);
+    // Deliberately mount-only ([] deps): this used to depend on
+    // [location.pathname, location.search, location.hash], which meant a
+    // fresh GET /auth/me network call — and a "Checking admin session…"
+    // flash replacing the whole outlet — fired on every in-app
+    // navigation. A later attempt to fix this depended on [navigate]
+    // instead, but under plain BrowserRouter that function's identity
+    // *also* changes on every route change (see navigateRef comment
+    // above), so that attempt still re-fired on navigation. Both location
+    // and navigate are read through refs instead, so this effect
+    // genuinely only runs once per mount. A live-revoked session is still
+    // caught reactively via onAdminUnauthorized (fired by
+    // adminApiRequest on any 401).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (status !== "authenticated") {
     return <div className="admin-auth-loading" aria-live="polite">Checking admin session…</div>;

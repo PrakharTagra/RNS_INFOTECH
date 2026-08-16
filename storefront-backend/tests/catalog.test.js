@@ -15,7 +15,7 @@ beforeEach(() => {
 
 describe("GET /api/categories", () => {
   it("is public — no Authorization header required", async () => {
-    Category.find.mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });
+    Category.find.mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }) });
 
     const res = await request(app).get("/api/categories");
 
@@ -23,7 +23,8 @@ describe("GET /api/categories", () => {
   });
 
   it("only queries active categories", async () => {
-    const sort = jest.fn().mockResolvedValue([{ _id: "c1", name: "Pen Tablets" }]);
+    const lean = jest.fn().mockResolvedValue([{ _id: "c1", name: "Pen Tablets" }]);
+    const sort = jest.fn().mockReturnValue({ lean });
     Category.find.mockReturnValue({ sort });
 
     const res = await request(app).get("/api/categories");
@@ -36,7 +37,7 @@ describe("GET /api/categories", () => {
 
 describe("GET /api/categories/:slug", () => {
   it("returns 404 for an inactive or unknown category", async () => {
-    Category.findOne.mockResolvedValue(null);
+    Category.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
 
     const res = await request(app).get("/api/categories/discontinued-line");
 
@@ -44,7 +45,7 @@ describe("GET /api/categories/:slug", () => {
   });
 
   it("returns the category by slug", async () => {
-    Category.findOne.mockResolvedValue({ _id: "c1", slug: "pen-tablets", name: "Pen Tablets" });
+    Category.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: "c1", slug: "pen-tablets", name: "Pen Tablets" }) });
 
     const res = await request(app).get("/api/categories/pen-tablets");
 
@@ -59,8 +60,9 @@ describe("GET /api/products", () => {
     const populate = jest.fn().mockReturnThis();
     const sort = jest.fn().mockReturnThis();
     const skip = jest.fn().mockReturnThis();
-    const limit = jest.fn().mockResolvedValue([]);
-    Product.find.mockReturnValue({ populate, sort, skip, limit });
+    const limit = jest.fn().mockReturnThis();
+    const lean = jest.fn().mockResolvedValue([]);
+    Product.find.mockReturnValue({ populate, sort, skip, limit, lean });
     Product.countDocuments.mockResolvedValue(0);
 
     const res = await request(app).get("/api/products").query({ isActive: "false" });
@@ -74,8 +76,9 @@ describe("GET /api/products", () => {
     const populate = jest.fn().mockReturnThis();
     const sort = jest.fn().mockReturnThis();
     const skip = jest.fn().mockReturnThis();
-    const limit = jest.fn().mockResolvedValue([]);
-    Product.find.mockReturnValue({ populate, sort, skip, limit });
+    const limit = jest.fn().mockReturnThis();
+    const lean = jest.fn().mockResolvedValue([]);
+    Product.find.mockReturnValue({ populate, sort, skip, limit, lean });
     Product.countDocuments.mockResolvedValue(0);
 
     const res = await request(app).get("/api/products").query({ category: "pen-tablets" });
@@ -89,8 +92,9 @@ describe("GET /api/products", () => {
     const populate = jest.fn().mockReturnThis();
     const sort = jest.fn().mockReturnThis();
     const skip = jest.fn().mockReturnThis();
-    const limit = jest.fn().mockResolvedValue([]);
-    Product.find.mockReturnValue({ populate, sort, skip, limit });
+    const limit = jest.fn().mockReturnThis();
+    const lean = jest.fn().mockResolvedValue([]);
+    Product.find.mockReturnValue({ populate, sort, skip, limit, lean });
     Product.countDocuments.mockResolvedValue(0);
 
     const res = await request(app).get("/api/products").query({ category: "does-not-exist" });
@@ -107,7 +111,7 @@ describe("GET /api/products", () => {
 
 describe("GET /api/products/:slug", () => {
   it("returns 404 for an inactive or unknown product", async () => {
-    Product.findOne.mockReturnValue({ populate: jest.fn().mockResolvedValue(null) });
+    Product.findOne.mockReturnValue({ populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
 
     const res = await request(app).get("/api/products/discontinued-tablet");
 
@@ -116,12 +120,13 @@ describe("GET /api/products/:slug", () => {
 
   it("returns the product by slug", async () => {
     Product.findOne.mockReturnValue({
-      populate: jest.fn().mockResolvedValue({ _id: "p1", slug: "wave-pen-tablet", name: "Wave Pen Tablet" }),
+      populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: "p1", slug: "wave-pen-tablet", name: "Wave Pen Tablet", price: 8000, mrp: 10000 }) }),
     });
 
     const res = await request(app).get("/api/products/wave-pen-tablet");
 
     expect(res.status).toBe(200);
     expect(res.body.product.slug).toBe("wave-pen-tablet");
+    expect(res.body.product.discountPercent).toBe(20);
   });
 });

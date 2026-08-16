@@ -39,9 +39,11 @@ describe("GET /api/flash-messages", () => {
 describe("GET /api/faqs", () => {
   it("lists published faq entries", async () => {
     Faq.find.mockReturnValue({
-      sort: jest.fn().mockResolvedValue([
-        { _id: "f1", question: "How long does shipping take?", answer: "2-3 days", isPublished: true },
-      ]),
+      sort: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue([
+          { _id: "f1", question: "How long does shipping take?", answer: "2-3 days", isPublished: true },
+        ]),
+      }),
     });
 
     const res = await request(app).get("/api/faqs");
@@ -61,6 +63,44 @@ describe("GET /api/website", () => {
   });
 });
 
+
+describe("GET /api/store-profile", () => {
+  it("returns only the public subset of the admin-saved store profile", async () => {
+    SiteSettings.findOne.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({
+        key: "global",
+        storeProfile: {
+          name: "RNS INFOTECH",
+          legalName: "RNS INFOTECH Pvt. Ltd.",
+          email: "support@rnsinfotech.in",
+          phone: "+91 98765 43210",
+          whatsapp: "919876543210",
+          hours: "Mon–Sat, 10:00 AM – 7:00 PM IST",
+          address: "MG Road, Bengaluru",
+          gstin: "29ABCDE1234F1Z5",
+        },
+      }),
+    });
+
+    const res = await request(app).get("/api/store-profile");
+
+    expect(res.status).toBe(200);
+    expect(res.headers["cache-control"]).toBe("no-store");
+    expect(res.body.storeProfile.name).toBe("RNS INFOTECH");
+    expect(res.body.storeProfile.email).toBe("support@rnsinfotech.in");
+    expect(res.body.storeProfile.gstin).toBeUndefined();
+    expect(res.body.storeProfile.legalName).toBeUndefined();
+  });
+
+  it("falls back to empty strings when no storeProfile has been saved yet", async () => {
+    SiteSettings.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue({ key: "global" }) });
+
+    const res = await request(app).get("/api/store-profile");
+
+    expect(res.status).toBe(200);
+    expect(res.body.storeProfile.name).toBe("");
+  });
+});
 
 describe("GET /api/blog", () => {
   it("returns published posts only", async () => {

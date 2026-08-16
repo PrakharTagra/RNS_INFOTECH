@@ -181,4 +181,41 @@ backend's own test suite is worth running yourself before deploying.
   (see the comments in `Order.js`) — if you change one, change the other.
 - Render's free tier spins down on inactivity; the first request after
   idle will be slow. Fine for testing, worth a paid instance before
-  real traffic.
+  real traffic. See "Render cold starts" below for the tradeoffs and a
+  lightweight mitigation if a paid instance isn't an option yet.
+
+## Render cold starts — tradeoffs and mitigation
+
+Render's free (and some low) tiers spin a service down after a period of
+no inbound traffic, then take anywhere from several seconds to ~30s+ to
+spin back up on the next request — the "cold start." This can't be fixed
+from application code (it's the platform pausing the whole process, not
+something `compression`/DB indexes/`.lean()` touch), so the honest
+options are:
+
+1. **Upgrade to a paid Render instance** that doesn't spin down. This is
+   the actual fix, not a workaround — do this before real customer
+   traffic if the cold-start latency (and the "first click after a lull
+   times out or feels broken" UX) isn't acceptable.
+2. **A scheduled health-check ping**, if staying on a free tier a while
+   longer: an external cron (e.g. a free-tier
+   [cron-job.org](https://cron-job.org)/GitHub Actions scheduled
+   workflow/UptimeRobot monitor) hitting each backend's
+   `/api/health/ready` every ~10–14 minutes keeps the service warm.
+   Tradeoffs to go in with eyes open:
+   - This works *against* Render's own free-tier terms in spirit (it's
+     designed to spin down idle services) — treat it as a stopgap, not a
+     long-term plan.
+   - It doesn't help the very first cold visitor after any gap longer
+     than the ping interval, or during a Render-side redeploy/restart.
+   - It adds constant background load (small, but non-zero) for a
+     service that's nominally supposed to be idle.
+3. **Do nothing**, if the current audience is low-traffic/internal and
+   an occasional slow first load is acceptable — often true during
+   active development, before this becomes customer-facing.
+
+No code change was made for this in the current pass — it's a
+deployment/infra decision, and (1) is the recommended path once this app
+has real users. If (2) is chosen instead, it only needs a scheduler
+pointed at the already-existing `/api/health/ready` endpoints on both
+backends — no new endpoint required.
