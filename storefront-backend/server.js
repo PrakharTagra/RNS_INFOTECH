@@ -11,7 +11,7 @@ dns.setDefaultResultOrder("ipv4first");
 const createApp = require("./src/app");
 const { connectDB } = require("./src/config/db");
 const { env, assertEnv } = require("./src/config/env");
-const { attachSocket } = require("./src/socket");
+const { attachSocket, stopChatChangeStream } = require("./src/socket");
 const logger = require("./src/utils/logger");
 const { startEmailQueue } = require("./src/services/emailTemplates.service");
 const { startReservationSweeper } = require("./src/services/stock.service");
@@ -39,6 +39,7 @@ async function main() {
     clearInterval(couponSweep);
     clearInterval(emailQueue);
     clearInterval(paymentReconcile);
+    stopChatChangeStream();
     server.close(() => process.exit(0));
   };
   process.on("SIGINT", () => shutdown("SIGINT"));

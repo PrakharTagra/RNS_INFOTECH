@@ -5,9 +5,9 @@ const required = [
   "MONGO_URI","CORS_ORIGIN","JWT_ADMIN_SECRET","JWT_ADMIN_TTL","JWT_ADMIN_REFRESH_TTL","PORT",
   "ADMIN_REFRESH_COOKIE_NAME","ADMIN_REFRESH_COOKIE_SAME_SITE","ADMIN_REFRESH_COOKIE_SECURE",
   "ADMIN_LOGIN_MAX_ATTEMPTS","ADMIN_LOGIN_WINDOW_MINUTES","ADMIN_LOGIN_LOCKOUT_MINUTES",
-  "ADMIN_PASSWORD_RESET_TTL_MINUTES","ADMIN_PASSWORD_RESET_URL","SMTP_PORT","EMAIL_FROM",
+  "ADMIN_PASSWORD_RESET_TTL_MINUTES","ADMIN_PASSWORD_RESET_URL","EMAIL_FROM",
 ];
-const requiredInProduction = ["MONGO_URI","JWT_ADMIN_SECRET","CLOUDINARY_CLOUD_NAME","CLOUDINARY_API_KEY","CLOUDINARY_API_SECRET","SMTP_HOST","EMAIL_FROM","RAZORPAY_KEY_ID","RAZORPAY_KEY_SECRET"];
+const requiredInProduction = ["MONGO_URI","JWT_ADMIN_SECRET","CLOUDINARY_CLOUD_NAME","CLOUDINARY_API_KEY","CLOUDINARY_API_SECRET","RESEND_API_KEY","EMAIL_FROM","RAZORPAY_KEY_ID","RAZORPAY_KEY_SECRET"];
 
 const corsOrigin = (process.env.CORS_ORIGIN || "").split(",").map((x) => x.trim()).filter(Boolean);
 const bool = (v) => String(v).toLowerCase() === "true";
@@ -29,10 +29,7 @@ const env = {
   adminLoginLockoutMs: Number(process.env.ADMIN_LOGIN_LOCKOUT_MINUTES) * 60 * 1000,
   adminPasswordResetTtlMinutes: Number(process.env.ADMIN_PASSWORD_RESET_TTL_MINUTES),
   adminPasswordResetUrl: process.env.ADMIN_PASSWORD_RESET_URL,
-  smtpHost: process.env.SMTP_HOST || "",
-  smtpPort: Number(process.env.SMTP_PORT),
-  smtpUser: process.env.SMTP_USER || "",
-  smtpPass: process.env.SMTP_PASS || "",
+  resendApiKey: process.env.RESEND_API_KEY || "",
   emailFrom: process.env.EMAIL_FROM || "",
   adminInvitationUrl: process.env.ADMIN_INVITATION_URL || "",
   adminInvitationTtlMinutes: Math.max(15, Number(process.env.ADMIN_INVITATION_TTL_MINUTES || 1440)),

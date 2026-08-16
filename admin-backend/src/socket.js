@@ -11,27 +11,73 @@ function emitMessage(message) {
   io.to(`chat:${message.threadId}`).emit("chat:message", message);
 }
 
+// See storefront-backend/src/socket.js for why this needs its own
+// restart loop: a change stream that errors out just dies on Render +
+// Atlas, and Mongoose doesn't auto-resume it — without this, one
+// network blip permanently kills live delivery of customer messages
+// into the admin console until the process restarts.
+let changeStreamRestartTimer = null;
+let changeStreamRestartAttempts = 0;
+let currentChangeStream = null;
+let changeStreamStopped = false;
+
+function scheduleChangeStreamRestart() {
+  if (changeStreamStopped || changeStreamRestartTimer) return;
+  changeStreamRestartAttempts += 1;
+  const delayMs = Math.min(30000, 1000 * 2 ** Math.min(changeStreamRestartAttempts, 5));
+  changeStreamRestartTimer = setTimeout(() => {
+    changeStreamRestartTimer = null;
+    startChatChangeStream();
+  }, delayMs);
+  if (typeof changeStreamRestartTimer.unref === "function") changeStreamRestartTimer.unref();
+}
+
 function startChatChangeStream() {
   try {
     const stream = ChatThread.watch([], { fullDocument: "updateLookup" });
     if (!stream || typeof stream.on !== "function") return null;
+    currentChangeStream = stream;
     stream.on("change", (change) => {
+      changeStreamRestartAttempts = 0;
       const doc = change.fullDocument;
       if (!doc || !Array.isArray(doc.messages) || !doc.messages.length) return;
       const m = doc.messages[doc.messages.length - 1];
       emitMessage({ threadId: doc.threadId, id: String(m._id), from: m.from, text: m.text, ts: m.ts, readByCustomer: m.readByCustomer, readByAdmin: m.readByAdmin });
     });
-    stream.on("error", (err) => logger.warn("chat_change_stream_stopped", { error: err.message }));
+    stream.on("error", (err) => {
+      logger.warn("chat_change_stream_stopped", { error: err.message });
+      scheduleChangeStreamRestart();
+    });
+    stream.on("close", () => {
+      logger.warn("chat_change_stream_closed");
+      scheduleChangeStreamRestart();
+    });
     return stream;
   } catch (err) {
     logger.warn("chat_change_stream_unavailable", { error: err.message });
+    scheduleChangeStreamRestart();
     return null;
+  }
+}
+
+function stopChatChangeStream() {
+  changeStreamStopped = true;
+  if (changeStreamRestartTimer) {
+    clearTimeout(changeStreamRestartTimer);
+    changeStreamRestartTimer = null;
+  }
+  if (currentChangeStream && typeof currentChangeStream.close === "function") {
+    currentChangeStream.close().catch(() => {});
   }
 }
 
 function attachSocket(server) {
   if (io) return io;
-  io = new Server(server, { cors: { origin: env.corsOrigin, credentials: true } });
+  io = new Server(server, {
+    cors: { origin: env.corsOrigin, credentials: true },
+    pingInterval: 20000,
+    pingTimeout: 20000,
+  });
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.accessToken;
@@ -64,4 +110,4 @@ function attachSocket(server) {
   startChatChangeStream();
   return io;
 }
-module.exports = { attachSocket, getSocketServer: () => io, startChatChangeStream };
+module.exports = { attachSocket, getSocketServer: () => io, startChatChangeStream, stopChatChangeStream };

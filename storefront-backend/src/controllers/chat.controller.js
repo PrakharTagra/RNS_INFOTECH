@@ -21,7 +21,29 @@ const createThread = asyncHandler(async (req, res) => {
     chatToken = signGuestChatToken(threadId);
   }
   const existing = await ChatThread.findOne({ threadId });
-  if (existing) return res.status(200).json({ thread: normalizedThread(existing), chatToken });
+  if (existing) {
+    // For authenticated customers, the thread is a permanent record tied
+    // to their account (threadId = user_<id>) and can have been created
+    // before the account's name/email were known (e.g. a guest thread
+    // created before login is a different threadId, but a user's own
+    // thread can still predate a later profile-name change or an initial
+    // creation call that raced auth hydration on the client). Keep it in
+    // sync on every call rather than freezing whatever was stored first —
+    // otherwise a thread created as "Guest" stays "Guest" forever, even
+    // once we know exactly who the customer is.
+    if (req.auth?.userId) {
+      const nextName = (customerName || "").trim();
+      const nextEmail = (customerEmail || "").trim();
+      const needsNameUpdate = nextName && nextName !== existing.customerName;
+      const needsEmailUpdate = nextEmail && nextEmail !== existing.customerEmail;
+      if (needsNameUpdate || needsEmailUpdate) {
+        if (needsNameUpdate) existing.customerName = nextName;
+        if (needsEmailUpdate) existing.customerEmail = nextEmail;
+        await existing.save();
+      }
+    }
+    return res.status(200).json({ thread: normalizedThread(existing), chatToken });
+  }
   const thread = await ChatThread.create({ threadId, customerName: customerName || "Guest", customerEmail: customerEmail || "", status: "open", messages: [] });
   res.status(201).json({ thread, chatToken });
 });

@@ -2,7 +2,7 @@
 const createApp = require("./src/app");
 const { connectDB } = require("./src/config/db");
 const { env, assertEnv } = require("./src/config/env");
-const { attachSocket } = require("./src/socket");
+const { attachSocket, stopChatChangeStream } = require("./src/socket");
 const logger = require("./src/utils/logger");
 const { startEmailQueue } = require("./src/services/emailTemplates.service");
 
@@ -21,6 +21,7 @@ async function main() {
   const shutdown = (signal) => {
     logger.info(`[admin-backend] received ${signal}, shutting down`);
     clearInterval(emailQueue);
+    stopChatChangeStream();
     server.close(() => process.exit(0));
   };
   process.on("SIGINT", () => shutdown("SIGINT"));
