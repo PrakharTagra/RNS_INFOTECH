@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import Icon from "../../components/Icon";
 import StatCard from "../../components/StatCard";
 import EmptyState from "../../components/EmptyState";
-import { getThreads, getChatStats, sendReply, markRead } from "../../services/chatService";
+import {
+  getThreads,
+  getThread,
+  getChatStats,
+  sendReply,
+  markRead,
+  subscribeToThreads,
+} from "../../services/chatService";
 
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });

@@ -1,5 +1,10 @@
-const configured = import.meta.env.VITE_ERROR_REPORT_URL || '/telemetry/client-error';
-const endpoint = configured.startsWith('http') ? configured : `${String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')}${configured}`;
+const configured = import.meta.env.VITE_ERROR_REPORT_URL || '';
+const apiBaseUrl = String(import.meta.env.VITE_ADMIN_API_BASE_URL || '').replace(/\/$/, '');
+const endpoint = configured.startsWith('http')
+  ? configured
+  : apiBaseUrl && configured
+    ? `${apiBaseUrl}${configured.startsWith('/') ? configured : `/${configured}`}`
+    : '';
 export function reportClientError(error, context = {}) {
   if (!endpoint) return;
   const redact = (v) => String(v || '').replace(/(authorization|cookie|token|password|otp|secret)=?[^\s&]*/gi, '$1=[REDACTED]').slice(0, 4000);
