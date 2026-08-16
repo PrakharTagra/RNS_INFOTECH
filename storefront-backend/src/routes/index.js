@@ -10,6 +10,7 @@ const contentRoutes = require("./content.routes");
 const couponRoutes = require("./coupon.routes");
 const reviewRoutes = require("./review.routes");
 const chatRoutes = require("./chat.routes");
+const leadRoutes = require("./lead.routes");
 
 // Every future phase adds one line here (e.g. `router.use("/products",
 // productRoutes)`) instead of mounting routes directly in server.js, so
@@ -28,5 +29,6 @@ router.use("/coupons", couponRoutes);
 router.use("/", contentRoutes);
 router.use("/products", reviewRoutes);
 router.use("/chat", chatRoutes);
+router.use("/leads", leadRoutes);
 
 module.exports = router;

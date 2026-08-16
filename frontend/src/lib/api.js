@@ -104,6 +104,19 @@ export async function apiRequest(path, { method = "GET", body, token, headers = 
   }
 }
 
+/**
+ * submitLead — posts to /api/leads. Backs the footer newsletter form,
+ * /demo, /help's contact form, and /request-quote, which previously each
+ * just faked a success after a setTimeout with nothing behind them.
+ * `type` must be one of "newsletter" | "demo" | "contact" | "quote".
+ */
+export function submitLead({ type, name = "", email, phone = "", company = "", message = "", meta = {} }) {
+  return apiRequest("/leads", {
+    method: "POST",
+    body: { type, name, email, phone, company, message, meta },
+  });
+}
+
 export function getInvoice(orderId) {
   return apiRequest(`/orders/${encodeURIComponent(orderId)}/invoice`, {
     method: "GET",

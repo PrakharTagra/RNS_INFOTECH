@@ -9,6 +9,8 @@ import SEO from "./components/SEO";
 import { SectionHeader } from "./components/SectionHeader";
 
 import { announcement, nav, footer, support, requestQuote } from "./data/siteData";
+import { submitLead } from "./lib/api";
+import { useToast } from "./context/ToastContext";
 
 const emptyForm = {
   name: "",
@@ -34,15 +36,33 @@ export default function RequestQuotePage() {
 
   const [form, setForm] = useState({ ...emptyForm, products: prefillProduct });
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setSent(true);
-    setForm(emptyForm);
+    setSubmitting(true);
+    try {
+      await submitLead({
+        type: "quote",
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        company: form.company,
+        message: form.message,
+        meta: { products: form.products, quantity: form.quantity },
+      });
+      setSent(true);
+      setForm(emptyForm);
+    } catch (err) {
+      toast.error(err?.message || "Couldn't send your request. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -176,8 +196,8 @@ export default function RequestQuotePage() {
                 />
               </div>
 
-              <button type="submit" className="rns-btn rns-btn--primary" style={{ justifyContent: "center" }}>
-                Send request
+              <button type="submit" disabled={submitting} className="rns-btn rns-btn--primary" style={{ justifyContent: "center" }}>
+                {submitting ? "Sending…" : "Send request"}
               </button>
             </form>
           </div>

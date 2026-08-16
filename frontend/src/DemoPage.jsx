@@ -8,6 +8,8 @@ import SEO from "./components/SEO";
 import { SectionHeader } from "./components/SectionHeader";
 
 import { announcement, nav, footer, support, demo } from "./data/siteData";
+import { submitLead } from "./lib/api";
+import { useToast } from "./context/ToastContext";
 
 const emptyForm = {
   name: "",
@@ -29,15 +31,33 @@ const emptyForm = {
 export default function DemoPage() {
   const [form, setForm] = useState(emptyForm);
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setSent(true);
-    setForm(emptyForm);
+    setSubmitting(true);
+    try {
+      await submitLead({
+        type: "demo",
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        company: form.company,
+        message: form.message,
+        meta: { interest: form.interest, mode: form.mode, preferredDate: form.preferredDate },
+      });
+      setSent(true);
+      setForm(emptyForm);
+    } catch (err) {
+      toast.error(err?.message || "Couldn't send your request. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -217,8 +237,8 @@ export default function DemoPage() {
                 />
               </div>
 
-              <button type="submit" className="rns-btn rns-btn--primary" style={{ justifyContent: "center" }}>
-                Request demo
+              <button type="submit" disabled={submitting} className="rns-btn rns-btn--primary" style={{ justifyContent: "center" }}>
+                {submitting ? "Sending…" : "Request demo"}
               </button>
             </form>
           </div>

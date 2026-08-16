@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Icon from "./Icon";
 import { support } from "../data/siteData";
 import { useToast } from "../context/ToastContext";
+import { submitLead } from "../lib/api";
 
 /** FooterLink — internal (path-starting) hrefs render as a router Link;
  * anything else (mailto:, tel:, external URLs, hash-only placeholders)
@@ -57,18 +58,20 @@ function NewsletterForm({ newsletter }) {
   const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed) return;
     setSubmitting(true);
-    // No backend in this sandbox — simulate a request so the form still
-    // feels real rather than silently doing nothing.
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await submitLead({ type: "newsletter", email: trimmed });
       setEmail("");
       toast.success(`Subscribed ${trimmed} for restock alerts & offers.`);
-    }, 500);
+    } catch (err) {
+      toast.error(err?.message || "Couldn't subscribe right now. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (

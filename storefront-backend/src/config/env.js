@@ -14,6 +14,10 @@ const env = {
   emailMaxAttempts: Math.max(1, Number(process.env.EMAIL_MAX_ATTEMPTS || 5)),
   emailRetryIntervalSeconds: Math.max(10, Number(process.env.EMAIL_RETRY_INTERVAL_SECONDS || 30)), razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
   smtpHost: process.env.SMTP_HOST || "", smtpPort: Number(process.env.SMTP_PORT), smtpUser: process.env.SMTP_USER || "", smtpPass: process.env.SMTP_PASS || "", emailFrom: process.env.EMAIL_FROM,
+  // Where newsletter/demo/contact/quote form notifications go (see
+  // lead.controller.js) - optional, falls back to EMAIL_FROM if unset so
+  // this never needs a new required env var to work.
+  leadNotifyEmail: process.env.LEAD_NOTIFY_EMAIL || "",
   returnWindowDays: Math.max(1, Number(process.env.RETURN_WINDOW_DAYS || 7)),
   paymentReconcileSeconds: Math.max(30, Number(process.env.PAYMENT_RECONCILE_SECONDS || 120)),
   rateLimitInTests: process.env.RATE_LIMIT_IN_TESTS === "true",

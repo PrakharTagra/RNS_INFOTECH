@@ -36,6 +36,15 @@ function render(template, data = {}) {
       return { subject:`Refund update for order ${d.orderNumber || d.orderId}`, text:`Refund of ₹${d.amount} for order ${d.orderNumber || d.orderId} is ${d.status}. Refund ID: ${d.refundId || "pending"}.`, html:layout("Refund update",`<p>Refund for order <strong>${esc(d.orderNumber || d.orderId)}</strong>: ₹${esc(d.amount)}.</p><p>Status: ${esc(d.status)}${d.refundId ? `<br>Refund ID: ${esc(d.refundId)}` : ""}</p>`) };
     case "return":
       return { subject:`Return update for order ${d.orderNumber || d.orderId}`, text:`Your return request for order ${d.orderNumber || d.orderId} is now ${d.status}.`, html:layout("Return update",`<p>Your return request for <strong>${esc(d.orderNumber || d.orderId)}</strong> is now <strong>${esc(d.status)}</strong>.</p>${d.reason ? `<p>${esc(d.reason)}</p>` : ""}`) };
+    case "lead-notification": {
+      const rows = [["Type", d.leadType], ["Name", d.name], ["Email", d.email], ["Phone", d.phone], ["Company", d.company]].filter(([, v]) => v);
+      const rowsHtml = rows.map(([k, v]) => `<p><strong>${esc(k)}:</strong> ${esc(v)}</p>`).join("");
+      return {
+        subject: `New ${d.leadType || "website"} submission — ${d.name || d.email}`,
+        text: rows.map(([k, v]) => `${k}: ${v}`).join("\n") + (d.message ? `\nMessage: ${d.message}` : ""),
+        html: layout(`New ${esc(d.leadType || "website")} submission`, `${rowsHtml}${d.message ? `<p><strong>Message:</strong><br>${esc(d.message)}</p>` : ""}`),
+      };
+    }
     default: throw new Error(`Unknown email template: ${template}`);
   }
 }

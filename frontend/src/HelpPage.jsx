@@ -11,6 +11,8 @@ import { useLiveChat } from "./context/LiveChatContext";
 
 import { announcement, nav, footer, support } from "./data/siteData";
 import { getFaqContent } from "./lib/contentApi";
+import { submitLead } from "./lib/api";
+import { useToast } from "./context/ToastContext";
 import { ErrorState } from "./components/ui/Stateviews";
 
 function ContactCard({ icon, title, description, action }) {
@@ -57,17 +59,31 @@ export default function HelpPage() {
   const { openChat } = useLiveChat();
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   function updateField(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // No backend here — simulate a sent message the same way the rest
-    // of this project simulates things that would normally hit a server.
-    setSent(true);
-    setForm({ name: "", email: "", subject: "", message: "" });
+    setSubmitting(true);
+    try {
+      await submitLead({
+        type: "contact",
+        name: form.name,
+        email: form.email,
+        message: form.message,
+        meta: { subject: form.subject },
+      });
+      setSent(true);
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch (err) {
+      toast.error(err?.message || "Couldn't send your message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -228,8 +244,8 @@ export default function HelpPage() {
                 style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--rns-line-strong)", fontSize: 13.5, fontFamily: "var(--rns-font-body)", resize: "vertical" }}
               />
             </div>
-            <button type="submit" className="rns-btn rns-btn--primary" style={{ justifyContent: "center" }}>
-              Send message
+            <button type="submit" disabled={submitting} className="rns-btn rns-btn--primary" style={{ justifyContent: "center" }}>
+              {submitting ? "Sending…" : "Send message"}
             </button>
           </form>
         </div>

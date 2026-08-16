@@ -18,6 +18,12 @@ function createApp() {
   app.use(requestId);
 
   app.disable("x-powered-by");
+  // Render (and most PaaS hosts) put the app behind a reverse proxy, so
+  // req.ip would otherwise always resolve to the proxy's IP instead of the
+  // real client — silently collapsing per-IP rate limiting (auth/OTP/
+  // payment limits in rateLimit.js) into one shared bucket for every
+  // visitor. `1` trusts exactly one hop, matching Render's setup.
+  app.set("trust proxy", 1);
   app.use(helmet({
     crossOriginEmbedderPolicy: false,
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
