@@ -21,12 +21,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Passwordless: logging in just means requesting a fresh OTP for this
-  // email and sending the person to verify it. AuthContext.login()
-  // always returns needsVerification on success (it can't authenticate
-  // by itself), so a successful call must route to /verify-email — never
-  // straight to `from` — otherwise the person lands back on the site
-  // still logged out.
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
@@ -61,10 +55,6 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-
-            <p style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", margin: 0 }}>
-              We'll email you a one-time code — no password needed.
-            </p>
 
             <AuthField label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
 
