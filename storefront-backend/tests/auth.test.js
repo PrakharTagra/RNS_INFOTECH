@@ -9,8 +9,16 @@ const User = require("../src/models/User");
 const Otp = require("../src/models/Otp");
 const otpService = require("../src/services/otp.service");
 const { signAccessToken } = require("../src/services/token.service");
+const { sendOtpEmail } = require("../src/services/email.service");
 
 const app = createApp();
+
+// Auto-mocked sendOtpEmail returns undefined by default, but the controller
+// chains .catch() onto its result — give it a resolved promise so that
+// doesn't blow up before each test gets to set its own expectations.
+beforeEach(() => {
+  sendOtpEmail.mockResolvedValue(undefined);
+});
 
 describe("POST /api/auth/request-otp", () => {
   it("rejects an invalid email with 400", async () => {

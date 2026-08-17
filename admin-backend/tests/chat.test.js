@@ -18,19 +18,20 @@ describe("GET /api/chat/threads", () => {
   });
 
   it("lists chat threads for the admin console", async () => {
-    ChatThread.find.mockReturnValue({
-      sort: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockResolvedValue([
-        {
-          _id: "t1",
-          threadId: "user_42",
-          customerName: "Jane",
-          customerEmail: "jane@test.com",
-          messages: [{ from: "customer", text: "Hello", ts: Date.now() }],
-          updatedAt: new Date(),
-        },
-      ]),
-    });
+    // listThreads uses an aggregation pipeline (match/sort/limit/project)
+    // rather than find().sort().limit(), so ChatThread.aggregate is what
+    // needs mocking here.
+    ChatThread.aggregate.mockResolvedValue([
+      {
+        _id: "t1",
+        threadId: "user_42",
+        customerName: "Jane",
+        customerEmail: "jane@test.com",
+        last: { from: "customer", text: "Hello", ts: Date.now() },
+        unread: 1,
+        updatedAt: new Date(),
+      },
+    ]);
 
     const res = await request(app).get("/api/chat/threads").set("Authorization", authHeader);
 

@@ -5,6 +5,7 @@ jest.mock("../src/models/Order");
 jest.mock("../src/models/Product");
 jest.mock("../src/models/InventoryLog");
 jest.mock("../src/models/User");
+jest.mock("../src/models/SiteSettings");
 
 const createApp = require("../src/app");
 const AdminUser = require("../src/models/AdminUser");
@@ -12,6 +13,7 @@ const Order = require("../src/models/Order");
 const Product = require("../src/models/Product");
 const InventoryLog = require("../src/models/InventoryLog");
 const User = require("../src/models/User");
+const SiteSettings = require("../src/models/SiteSettings");
 const { signAccessToken } = require("../src/services/token.service");
 
 AdminUser.ROLES = ["Owner", "Manager", "Staff"];
@@ -27,44 +29,41 @@ beforeEach(() => {
 
 describe("GET /api/dashboard/summary", () => {
   it("returns the dashboard metrics and recent activity", async () => {
-    Order.find.mockImplementation((query) => {
-      if (query && query.status === "pending") {
-        return { countDocuments: jest.fn().mockResolvedValue(9) };
-      }
-      if (query && query.createdAt) {
-        return {
-          sort: jest.fn().mockReturnThis(),
-          limit: jest.fn().mockResolvedValue([
-            { _id: "ord1", status: "confirmed", itemsTotal: 1200, createdAt: new Date(), user: { name: "Asha" } },
-            { _id: "ord2", status: "shipped", itemsTotal: 450, createdAt: new Date(), user: { name: "Dev" } },
-          ]),
-        };
-      }
-      return {
-        sort: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue([
-          { _id: "ord1", status: "confirmed", itemsTotal: 1200, createdAt: new Date(), user: { name: "Asha" } },
-        ]),
-      };
+    // Small helper for mocking Mongoose query chains: every intermediate
+    // method (select/sort/limit/populate) returns the same chainable
+    // object, and .lean() resolves with the given data — matching how
+    // the controller actually chains these calls.
+    const chainable = (data) => {
+      const chain = {};
+      ["select", "sort", "limit", "populate"].forEach((method) => {
+        chain[method] = jest.fn().mockReturnValue(chain);
+      });
+      chain.lean = jest.fn().mockResolvedValue(data);
+      return chain;
+    };
+
+    SiteSettings.findOne.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue({ commerce: { lowStockThreshold: 8 } }),
     });
+    // The controller calls Order.find({}) exactly once, for recentOrders.
+    Order.find.mockReturnValue(
+      chainable([
+        { _id: "ord1", status: "confirmed", itemsTotal: 1200, createdAt: new Date(), user: { name: "Asha" } },
+      ])
+    );
     Order.countDocuments.mockResolvedValue(12);
     Order.aggregate.mockResolvedValue([
       { _id: "2026-08-08", sales: 42000 },
       { _id: "2026-08-09", sales: 58000 },
     ]);
     User.countDocuments.mockResolvedValue(2148);
-    Product.find.mockReturnValue({
-      sort: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockResolvedValue([
-        { name: "Stylus Pro", sku: "RNS-SP", stock: 2 },
-      ]),
-    });
-    InventoryLog.find.mockReturnValue({
-      sort: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockResolvedValue([
-        { _id: "adj1", productName: "Stylus Pro", reason: "Damaged", createdAt: new Date() },
-      ]),
-    });
+    Product.find.mockReturnValue(
+      chainable([{ name: "Stylus Pro", sku: "RNS-SP", stock: 2 }])
+    );
+    InventoryLog.find.mockReturnValue(
+      chainable([{ _id: "adj1", productName: "Stylus Pro", reason: "Damaged", createdAt: new Date() }])
+    );
 
     const res = await request(app).get("/api/dashboard/summary").set("Authorization", ownerAuthHeader);
 
@@ -76,7 +75,10 @@ describe("GET /api/dashboard/summary", () => {
       expect.objectContaining({ label: "Pending orders" }),
       expect.objectContaining({ label: "Low-stock products" }),
     ]));
-    expect(res.body.salesTrend).toHaveLength(2);
+    // The controller always returns a fixed 7-day trend (zero-filling days
+    // with no sales) so the dashboard chart has a consistent x-axis —
+    // it doesn't just echo back the aggregation's result count.
+    expect(res.body.salesTrend).toHaveLength(7);
     expect(res.body.lowStock).toHaveLength(1);
     expect(res.body.recentOrders).toHaveLength(1);
     expect(res.body.recentActivity.length).toBeGreaterThan(0);

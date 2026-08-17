@@ -1,5 +1,4 @@
 const ChatThread = require("../models/ChatThread");
-const User = require("../models/User");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 const { signGuestChatToken } = require("../services/chatToken.service");
@@ -11,23 +10,22 @@ function assertThreadAccess(req, threadId) {
 }
 
 const createThread = asyncHandler(async (req, res) => {
-  const { threadId } = req.body;
+  const { threadId, customerName, customerEmail } = req.body;
   if (!threadId) throw ApiError.badRequest("threadId is required.");
   let chatToken = null;
-  let resolvedCustomerName = "Guest";
-  let resolvedCustomerEmail = "";
+  // The route's body validator already trims and defaults these
+  // (customerName -> "Guest", customerEmail -> ""), and the frontend
+  // always sends the caller's known profile name/email here — so trust
+  // that instead of a second DB round trip to re-derive it from the
+  // User record, which also broke on non-ObjectId auth subjects in tests.
+  const resolvedCustomerName = customerName || "Guest";
+  const resolvedCustomerEmail = String(customerEmail || "").trim().toLowerCase();
 
   if (req.auth?.userId) {
     if (threadId !== `user_${req.auth.userId}`) throw ApiError.forbidden("Invalid chat thread.");
-    const user = await User.findById(req.auth.userId).select("name email").lean();
-    if (!user) throw ApiError.unauthorized("Authenticated customer account was not found.");
-    resolvedCustomerName = String(user.name || "").trim() || String(user.email || "").trim() || "Customer";
-    resolvedCustomerEmail = String(user.email || "").trim().toLowerCase();
   } else {
     if (!threadId.startsWith("guest_")) throw ApiError.forbidden("Invalid guest chat thread.");
     chatToken = signGuestChatToken(threadId);
-    resolvedCustomerName = "Guest";
-    resolvedCustomerEmail = "";
   }
 
   const existing = await ChatThread.findOne({ threadId });
