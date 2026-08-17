@@ -111,13 +111,21 @@ export function AuthProvider({ children }) {
     verifyEmail: async (code, nameOverride) => {
       if (!pendingVerification?.email) return { ok: false, error: "No verification in progress." };
 
+      // The backend's verify-otp schema treats `name` as optional but,
+      // if present, requires a non-empty string. Login (as opposed to
+      // signup) has no name to send, so pendingVerification.name is ""
+      // — sending that empty string tripped the schema's min(1) check
+      // and got rejected with a 400. Only include `name` when there's
+      // an actual value.
+      const name = String(nameOverride || pendingVerification.name || "").trim();
+
       try {
         const response = await apiRequest("/auth/verify-otp", {
           method: "POST",
           body: {
             email: pendingVerification.email,
             code,
-            name: nameOverride || pendingVerification.name || "",
+            ...(name ? { name } : {}),
           },
         });
 

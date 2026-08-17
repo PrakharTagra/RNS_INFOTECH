@@ -4,6 +4,8 @@ import Icon from "../components/Icon";
 import { navItemsFlat } from "../config/navConfig";
 import { getAccountSync } from "../services/settingsService";
 import { adminLogout } from "../lib/adminApi";
+import TopbarSearch from "./TopbarSearch";
+import TopbarNotifications from "./TopbarNotifications";
 
 function initials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -46,13 +48,8 @@ export default function Topbar({ onMenuClick }) {
       </div>
 
       <div className="admin-topbar__right">
-        <button className="admin-topbar__icon-btn" type="button" aria-label="Search">
-          <Icon name="search" size={16} />
-        </button>
-        <button className="admin-topbar__icon-btn" type="button" aria-label="Notifications">
-          <Icon name="bell" size={16} />
-          <span className="admin-topbar__dot" />
-        </button>
+        <TopbarSearch />
+        <TopbarNotifications />
         <div className="admin-topbar__profile">
           <div className="admin-topbar__avatar">{initials(account.name)}</div>
           <div>
