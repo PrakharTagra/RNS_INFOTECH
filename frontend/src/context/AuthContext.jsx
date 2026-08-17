@@ -71,7 +71,7 @@ export function AuthProvider({ children }) {
 
         return { ok: true, devCode: response.devCode || null };
       } catch (error) {
-        return { ok: false, error: error.message };
+        return { ok: false, error: error.message, code: error.code };
       }
     },
 
@@ -139,7 +139,12 @@ export function AuthProvider({ children }) {
         setPendingVerification(null);
         return { ok: true, user: normalized };
       } catch (error) {
-        return { ok: false, error: error.message };
+        // Surface the machine-readable code alongside the message so the UI
+        // can tell "wrong code, try again" (OTP_INVALID) apart from
+        // "that code is dead, you need a new one" (OTP_NOT_FOUND,
+        // OTP_LOCKED, OTP_CONSUMED) instead of treating every failure the
+        // same way.
+        return { ok: false, error: error.message, code: error.code };
       }
     },
 

@@ -92,12 +92,17 @@ export class ApiClientError extends Error {
 }
 
 function userFacingApiMessage(status, payload, fallback = "We couldn't complete that request.") {
+  // Domain-specific 401s (currently just OTP_INVALID, from /auth/verify-otp)
+  // carry their own message and must not be clobbered by the generic
+  // "session expired" copy below, or a wrong-code entry reads as if the
+  // user's whole session died instead of just being told to retry the code.
+  if (status === 401 && payload?.error?.code) return payload.error.message || fallback;
   if (status === 401) return "Your session has expired. Please sign in again.";
   if (status === 403) return "You don't have permission to perform this action.";
   if (status === 404) return "The requested information could not be found.";
   if (status === 409) return payload?.error?.message || "This request conflicts with the current data. Please refresh and try again.";
   if (status === 413) return "The request is too large.";
-  if (status === 429) return "Too many requests. Please wait a moment and try again.";
+  if (status === 429) return payload?.error?.message || "Too many requests. Please wait a moment and try again.";
   if (status >= 500) return "The service is temporarily unavailable. Please try again.";
   return payload?.error?.message || payload?.message || fallback;
 }

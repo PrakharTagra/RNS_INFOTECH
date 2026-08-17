@@ -27,8 +27,19 @@ export default function VerifyEmailPage() {
 
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [errorCode, setErrorCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [resent, setResent] = useState(false);
+
+  // Codes that mean "this OTP is dead, don't bother retyping it" — the
+  // field gets cleared and the person is nudged toward Resend instead of
+  // being left staring at a code that can never succeed. OTP_INVALID
+  // (a plain wrong digit) is deliberately excluded: that one's worth a
+  // retry with the same still-live code.
+  const deadCodeErrors = new Set(["OTP_NOT_FOUND", "OTP_LOCKED", "OTP_CONSUMED"]);
+  // Codes that mean the resend button itself should stay disabled a while
+  // longer, independent of the local cooldown timer.
+  const resendBlockedErrors = new Set(["OTP_COOLDOWN", "OTP_DAILY_LIMIT", "RATE_LIMITED"]);
 
   useEffect(() => {
     if (!pendingVerification) return;
@@ -74,6 +85,13 @@ export default function VerifyEmailPage() {
     const result = await verifyEmail(code);
     if (!result.ok) {
       setError(result.error);
+      setErrorCode(result.code || "");
+      // A dead code (expired / locked out / already used) can never
+      // succeed no matter how many times it's retyped — clear the field
+      // so the person isn't tempted to keep hammering the same digits and
+      // is pushed toward Resend instead. A plain wrong digit (OTP_INVALID)
+      // leaves the field alone so they can just fix the typo.
+      if (deadCodeErrors.has(result.code)) setCode("");
       return;
     }
     navigate(from, { replace: true, state: fromState });
@@ -83,12 +101,17 @@ export default function VerifyEmailPage() {
     const result = await resendOtp();
     if (result.ok) {
       setResent(true);
+      setError("");
+      setErrorCode("");
       setCooldown(RESEND_COOLDOWN_S);
       window.setTimeout(() => setResent(false), 2500);
     } else {
       setError(result.error);
+      setErrorCode(result.code || "");
     }
   }
+
+  const resendLocked = cooldown > 0 || resendBlockedErrors.has(errorCode);
 
   return (
     <>
@@ -149,6 +172,7 @@ export default function VerifyEmailPage() {
                 onChange={(e) => {
                   setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
                   if (error) setError("");
+                  if (errorCode) setErrorCode("");
                 }}
                 inputMode="numeric"
                 maxLength={6}
@@ -173,8 +197,8 @@ export default function VerifyEmailPage() {
             <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--rns-ink-soft)" }}>
               {resent ? (
                 <span style={{ color: "#0a7a58" }}>A new code has been sent.</span>
-              ) : cooldown > 0 ? (
-                <span>Resend code in {cooldown}s</span>
+              ) : resendLocked ? (
+                <span>{cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend unavailable right now"}</span>
               ) : (
                 <button
                   type="button"

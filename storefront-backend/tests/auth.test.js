@@ -122,6 +122,31 @@ describe("POST /api/auth/verify-otp", () => {
 
     expect(res.status).toBe(401);
     expect(otpDoc.attempts).toBe(1);
+    // A wrong digit must be distinguishable from every other 401/400 path
+    // (expired, locked out, already consumed) so the frontend can tell the
+    // user "try again" instead of "get a new code".
+    expect(res.body.error.code).toBe("OTP_INVALID");
+    expect(res.body.error.message).not.toMatch(/session/i);
+  });
+
+  it("locks out after the max number of incorrect attempts, distinct from a plain wrong code", async () => {
+    const codeHash = await otpService.hashCode("111111");
+    const otpDoc = {
+      email: "shopper@example.com",
+      codeHash,
+      attempts: 4, // one below OTP_MAX_ATTEMPTS=5 from .env.test
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      save: jest.fn().mockResolvedValue(true),
+    };
+    Otp.findOne.mockReturnValue({ sort: jest.fn().mockResolvedValue(otpDoc) });
+
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email: "shopper@example.com", code: "222222" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("OTP_LOCKED");
   });
 });
 

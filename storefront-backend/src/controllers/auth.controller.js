@@ -86,10 +86,10 @@ const verifyOtp = asyncHandler(async (req, res) => {
       otp.attempts += 1;
       await otp.save();
       if (otp.attempts >= env.otpMaxAttempts) throw ApiError.conflict("Too many incorrect attempts. Request a new code.", { code: "OTP_LOCKED" });
-      throw ApiError.unauthorized("Incorrect code.");
+      throw ApiError.unauthorized("Incorrect code. Please try again.", { code: "OTP_INVALID" });
     }
     if (!failed || failed.attempts >= env.otpMaxAttempts) throw ApiError.conflict("Too many incorrect attempts. Request a new code.", { code: "OTP_LOCKED" });
-    throw ApiError.unauthorized("Incorrect code.");
+    throw ApiError.unauthorized("Incorrect code. Please try again.", { code: "OTP_INVALID" });
   }
 
   const consumed = await Otp.findOneAndUpdate(

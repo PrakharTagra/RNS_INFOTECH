@@ -8,8 +8,18 @@ const env = {
   port: Number(process.env.PORT), mongoUri: process.env.MONGO_URI, corsOrigin,
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET, jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   jwtAccessTtl: process.env.JWT_ACCESS_TTL, jwtRefreshTtl: process.env.JWT_REFRESH_TTL,
-  otpTtlMinutes: Number(process.env.OTP_TTL_MINUTES), otpResendCooldownSeconds: Number(process.env.OTP_RESEND_COOLDOWN_SECONDS),
+  otpTtlMinutes: Number(process.env.OTP_TTL_MINUTES),
+  // Floor of 60s regardless of what's configured — "resend" can never be
+  // faster than once a minute, even if OTP_RESEND_COOLDOWN_SECONDS is
+  // misconfigured lower in some environment.
+  otpResendCooldownSeconds: Math.max(60, Number(process.env.OTP_RESEND_COOLDOWN_SECONDS) || 0),
   otpMaxAttempts: Number(process.env.OTP_MAX_ATTEMPTS), otpDebugEcho: process.env.OTP_DEBUG_ECHO === "true",
+  // Per-email cap on how many OTPs can be *sent* in a rolling day, on top of
+  // the per-request cooldown above — stops someone from grinding out a new
+  // code every 60s all day long. Enforced by otpDailyRateLimit in
+  // rateLimit.js, keyed on email only (not IP), since this is an account-
+  // level quota rather than an anti-burst-from-one-client control.
+  otpDailyLimit: Math.max(1, Number(process.env.OTP_DAILY_LIMIT || 5)),
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || "", razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
   emailMaxAttempts: Math.max(1, Number(process.env.EMAIL_MAX_ATTEMPTS || 5)),
   emailRetryIntervalSeconds: Math.max(10, Number(process.env.EMAIL_RETRY_INTERVAL_SECONDS || 30)), razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
@@ -41,8 +51,9 @@ function assertEnv() {
   if (!env.port || env.port < 1 || env.port > 65535) throw new Error("PORT must be a valid TCP port.");
   if (!env.corsOrigin.length) throw new Error("CORS_ORIGIN must contain at least one allowed origin.");
   if (!Number.isFinite(env.otpTtlMinutes) || env.otpTtlMinutes <= 0) throw new Error("OTP_TTL_MINUTES must be greater than 0.");
-  if (!Number.isFinite(env.otpResendCooldownSeconds) || env.otpResendCooldownSeconds < 0) throw new Error("OTP_RESEND_COOLDOWN_SECONDS must be 0 or greater.");
+  if (!Number.isFinite(env.otpResendCooldownSeconds) || env.otpResendCooldownSeconds < 60) throw new Error("OTP_RESEND_COOLDOWN_SECONDS must be at least 60 (1 minute).");
   if (!Number.isFinite(env.otpMaxAttempts) || env.otpMaxAttempts < 1) throw new Error("OTP_MAX_ATTEMPTS must be at least 1.");
+  if (!Number.isFinite(env.otpDailyLimit) || env.otpDailyLimit < 1) throw new Error("OTP_DAILY_LIMIT must be at least 1.");
   if (env.nodeEnv === "production") {
     const missingProd = requiredInProduction.filter((k) => !process.env[k]);
     if (missingProd.length) throw new Error(`Missing required production environment variables: ${missingProd.join(", ")}`);
