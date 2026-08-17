@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Icon from "./Icon";
-import { searchSite, TYPE_LABELS } from "../lib/search";
+import { searchSite, useSearchIndex, TYPE_LABELS } from "../lib/search";
 
 const SUGGESTION_LIMIT = 7;
 
@@ -11,7 +11,8 @@ export default function SearchBar() {
   const containerRef = useRef(null);
   const navigate = useNavigate();
 
-  const results = useMemo(() => searchSite(query, { limit: SUGGESTION_LIMIT }), [query]);
+  const index = useSearchIndex();
+  const results = useMemo(() => searchSite(query, index, { limit: SUGGESTION_LIMIT }), [query, index]);
   const showDropdown = focused && query.trim().length > 0;
 
   useEffect(() => {

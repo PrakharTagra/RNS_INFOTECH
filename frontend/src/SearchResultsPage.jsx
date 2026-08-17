@@ -8,7 +8,7 @@ import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 
 import { announcement, nav, footer } from "./data/siteData";
-import { searchSite, TYPE_LABELS } from "./lib/search";
+import { searchSite, useSearchIndex, TYPE_LABELS } from "./lib/search";
 
 const TYPE_ORDER = ["product", "category", "service", "faq", "page"];
 
@@ -75,7 +75,8 @@ export default function SearchResultsPage() {
   const [searchParams] = useSearchParams();
   const q = searchParams.get("q") || "";
 
-  const results = useMemo(() => searchSite(q), [q]);
+  const index = useSearchIndex();
+  const results = useMemo(() => searchSite(q, index), [q, index]);
 
   const grouped = useMemo(() => {
     const map = {};

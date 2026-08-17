@@ -1,4 +1,6 @@
-import { products, categories, solutions, faqs } from "../data/siteData";
+import { useEffect, useState } from "react";
+import { solutions, faqs } from "../data/siteData";
+import { apiRequest, normalizeProduct } from "./api";
 
 // Pages that aren't otherwise represented in the catalogue data but
 // are still reasonable things to land on from a site-wide search.
@@ -43,32 +45,10 @@ export const TYPE_LABELS = {
   page: "Pages",
 };
 
-function buildIndex() {
+// Static (non-catalogue) part of the index — solutions, FAQs, and misc
+// pages. These aren't backed by an API, so they stay as site copy.
+function buildStaticIndex() {
   const items = [];
-
-  products.forEach((p) => {
-    items.push({
-      type: "product",
-      id: p.id,
-      title: p.name,
-      subtitle: `${p.category} · ₹${p.price.toLocaleString("en-IN")}`,
-      image: p.image,
-      href: `/products/${p.id}`,
-      keywords: [p.name, p.category, p.sku, p.shortDescription].join(" ").toLowerCase(),
-    });
-  });
-
-  categories.forEach((c) => {
-    items.push({
-      type: "category",
-      id: c.id,
-      title: c.name,
-      subtitle: `Browse the ${c.name} category`,
-      image: c.image,
-      href: `/products?category=${c.id}`,
-      keywords: c.name.toLowerCase(),
-    });
-  });
 
   solutions.forEach((s, i) => {
     items.push({
@@ -106,25 +86,98 @@ function buildIndex() {
   return items;
 }
 
-let cachedIndex = null;
-function getSearchIndex() {
-  if (!cachedIndex) cachedIndex = buildIndex();
-  return cachedIndex;
+function productToItem(raw) {
+  const p = normalizeProduct(raw);
+  return {
+    type: "product",
+    id: p.id,
+    title: p.name,
+    subtitle: `${p.category} · ₹${p.price.toLocaleString("en-IN")}`,
+    image: p.image,
+    href: `/products/${p.slug}`,
+    keywords: [p.name, p.category, p.sku, p.shortDescription].filter(Boolean).join(" ").toLowerCase(),
+  };
+}
+
+function categoryToItem(c) {
+  const id = c.slug || c._id || c.id;
+  return {
+    type: "category",
+    id,
+    title: c.name,
+    subtitle: `Browse the ${c.name} category`,
+    image: c.image?.url || c.image || "",
+    href: `/products?category=${id}`,
+    keywords: (c.name || "").toLowerCase(),
+  };
+}
+
+// Catalogue (products + categories) comes from the live API. It's
+// fetched once, cached at module scope, and shared by every caller
+// (the navbar search-as-you-type dropdown and the full results page)
+// so we don't refetch the whole catalogue on every keystroke.
+let catalogItems = null;
+let catalogPromise = null;
+
+function loadCatalogIndex() {
+  if (catalogPromise) return catalogPromise;
+  catalogPromise = Promise.all([
+    apiRequest("/categories").catch(() => ({ items: [] })),
+    apiRequest("/products?page=1&limit=200").catch(() => ({ items: [] })),
+  ])
+    .then(([categoriesRes, productsRes]) => {
+      catalogItems = [
+        ...(productsRes?.items || []).map(productToItem),
+        ...(categoriesRes?.items || []).map(categoryToItem),
+      ];
+      return catalogItems;
+    })
+    .catch(() => {
+      catalogItems = catalogItems || [];
+      return catalogItems;
+    });
+  return catalogPromise;
+}
+
+// Kick the fetch off immediately (module load), so the catalogue is
+// often already warm by the time someone focuses the search box.
+loadCatalogIndex();
+
+/**
+ * useSearchIndex — live product/category catalogue + static site
+ * content, combined into one searchable index. Triggers a re-render
+ * once the catalogue finishes loading (or fails, in which case the
+ * index just falls back to static content only).
+ */
+export function useSearchIndex() {
+  const [, setReady] = useState(Boolean(catalogItems));
+
+  useEffect(() => {
+    if (catalogItems) return;
+    let ignore = false;
+    loadCatalogIndex().then(() => {
+      if (!ignore) setReady(true);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  return [...(catalogItems || []), ...buildStaticIndex()];
 }
 
 /**
- * searchSite — plain-text search across the whole catalogue and site
- * (products, categories, services, FAQs, static pages).
- * Every query word must appear somewhere in the item; results are
- * ranked with title matches weighted above description matches.
+ * searchSite — plain-text search across a supplied index (see
+ * useSearchIndex). Every query word must appear somewhere in the
+ * item; results are ranked with title matches weighted above
+ * description matches.
  */
-export function searchSite(query, { limit } = {}) {
+export function searchSite(query, index, { limit } = {}) {
   const q = (query || "").trim().toLowerCase();
   if (!q) return [];
   const terms = q.split(/\s+/).filter(Boolean);
-  const index = getSearchIndex();
 
-  const results = index
+  const results = (index || [])
     .map((item) => {
       const titleLower = item.title.toLowerCase();
       const haystack = `${titleLower} ${item.subtitle || ""} ${item.keywords || ""}`.toLowerCase();

@@ -11,37 +11,35 @@ import { useAuth } from "./context/AuthContext";
 import { announcement, nav, footer } from "./data/siteData";
 
 export default function LoginPage() {
-  const { login, restartVerification } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from || "/";
   const fromState = location.state?.fromState;
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [needsVerification, setNeedsVerification] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Passwordless: logging in just means requesting a fresh OTP for this
+  // email and sending the person to verify it. AuthContext.login()
+  // always returns needsVerification on success (it can't authenticate
+  // by itself), so a successful call must route to /verify-email — never
+  // straight to `from` — otherwise the person lands back on the site
+  // still logged out.
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const result = await login({ email, password });
+      const result = await login({ email });
       if (!result.ok) {
         setError(result.error);
-        setNeedsVerification(Boolean(result.needsVerification));
         return;
       }
-      navigate(from, { replace: true, state: fromState });
+      navigate("/verify-email", { state: { from, fromState } });
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function handleGoVerify() {
-    await restartVerification(email);
-    navigate("/verify-email", { state: { from, fromState } });
   }
 
   return (
@@ -61,26 +59,17 @@ export default function LoginPage() {
             {error && (
               <div style={{ fontSize: 12.5, color: "#d64545", background: "#fdeceb", borderRadius: 6, padding: "8px 12px" }}>
                 {error}
-                {needsVerification && (
-                  <>
-                    {" "}
-                    <button
-                      type="button"
-                      onClick={handleGoVerify}
-                      style={{ background: "none", border: "none", padding: 0, color: "#d64545", textDecoration: "underline", cursor: "pointer", fontSize: "inherit" }}
-                    >
-                      Verify now
-                    </button>
-                  </>
-                )}
               </div>
             )}
 
+            <p style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", margin: 0 }}>
+              We'll email you a one-time code — no password needed.
+            </p>
+
             <AuthField label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
-            <AuthField label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
 
             <button type="submit" disabled={submitting} className="rns-btn rns-btn--primary" style={{ justifyContent: "center", marginTop: 6 }}>
-              {submitting ? "Logging in..." : "Log in"}
+              {submitting ? "Sending code..." : "Send verification code"}
             </button>
 
             <div style={{ textAlign: "center", fontSize: 13, color: "var(--rns-ink-soft)" }}>
