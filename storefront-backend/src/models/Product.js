@@ -35,7 +35,12 @@ const productSchema = new mongoose.Schema(
     rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
+    // Mirrors admin-backend/src/models/Product.js — see that file for
+    // the Phase H1 homepage-curation field reasoning. Read-only here.
     isFeatured: { type: Boolean, default: false },
+    homepageFeaturedOrder: { type: Number, default: null, min: 0 },
+    isBestSeller: { type: Boolean, default: false },
+    homepageBestSellerOrder: { type: Number, default: null, min: 0 },
   },
   {
     timestamps: true,
@@ -69,5 +74,9 @@ productSchema.index({ name: "text", description: "text", tags: "text" });
 productSchema.index({ isActive: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, isFeatured: 1 });
 productSchema.index({ isActive: 1, stock: 1 });
+// Backs the homepage endpoint's curated-rail queries (Phase H1) — see
+// admin-backend/src/models/Product.js for the matching pair.
+productSchema.index({ isActive: 1, isFeatured: 1, homepageFeaturedOrder: 1 });
+productSchema.index({ isActive: 1, isBestSeller: 1, homepageBestSellerOrder: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

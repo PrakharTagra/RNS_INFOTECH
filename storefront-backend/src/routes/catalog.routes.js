@@ -11,6 +11,9 @@ const router = Router();
 // this service's whole point (per BACKEND_PLAN.md) is mostly-public reads.
 router.get("/categories", catalogController.listCategories);
 router.get("/categories/:slug", validateParamPattern("slug", /^[a-z0-9]+(?:-[a-z0-9]+)*$/), catalogController.getCategoryBySlug);
+// No query params, so no validate() middleware here — unlike /products,
+// this endpoint always returns the same fixed shape (see controller).
+router.get("/homepage-products", catalogController.getHomepageProducts);
 router.get("/products", validate(listProductsQuerySchema, "query"), catalogController.listProducts);
 router.get("/products/:slug", validateParamPattern("slug", /^[a-z0-9]+(?:-[a-z0-9]+)*$/), catalogController.getProductBySlug);
 
