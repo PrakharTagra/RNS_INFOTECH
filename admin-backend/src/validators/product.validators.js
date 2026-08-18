@@ -19,7 +19,15 @@ const createProductSchema = z.object({
   specifications: z.record(z.string(), z.string()).optional(),
   tags: z.array(z.string().trim().toLowerCase()).optional(),
   isActive: z.coerce.boolean().optional(),
+  // isFeatured/isBestSeller mark a product for a curated homepage rail;
+  // the paired *Order fields are optional here because the controller
+  // auto-assigns the next order slot when a product is newly marked
+  // without one (see resolveHomepageCuration in product.controller.js).
+  // Pass an explicit order to control placement directly.
   isFeatured: z.coerce.boolean().optional(),
+  homepageFeaturedOrder: z.coerce.number().int().min(0).optional(),
+  isBestSeller: z.coerce.boolean().optional(),
+  homepageBestSellerOrder: z.coerce.number().int().min(0).optional(),
 }).refine((data) => data.mrp >= data.price, { message: "mrp must be greater than or equal to price", path: ["mrp"] });
 
 const updateProductSchema = z.object({
@@ -38,6 +46,9 @@ const updateProductSchema = z.object({
   tags: z.array(z.string().trim().toLowerCase()),
   isActive: z.coerce.boolean(),
   isFeatured: z.coerce.boolean(),
+  homepageFeaturedOrder: z.coerce.number().int().min(0),
+  isBestSeller: z.coerce.boolean(),
+  homepageBestSellerOrder: z.coerce.number().int().min(0),
 }).partial().refine((data) => data.mrp === undefined || data.price === undefined || data.mrp >= data.price, { message: "mrp must be greater than or equal to price", path: ["mrp"] });
 
 const listQuerySchema = z.object({
@@ -47,6 +58,7 @@ const listQuerySchema = z.object({
   category: z.string().trim().regex(OBJECT_ID_RE, "category must be a valid id").optional(),
   isActive: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
   isFeatured: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
+  isBestSeller: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
   sort: z.enum(["newest", "price_asc", "price_desc", "rating", "name", "stock_asc", "stock_desc"]).optional(),
   brand: z.string().trim().optional(),
   stock: z.enum(["in-stock", "low-stock", "out-of-stock"]).optional(),

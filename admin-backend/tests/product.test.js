@@ -101,6 +101,170 @@ describe("GET /api/products", () => {
     expect(res.body.total).toBe(1);
     expect(populate).toHaveBeenCalledWith("category", "name slug");
   });
+
+  it("filters by isBestSeller", async () => {
+    const populate = jest.fn().mockReturnThis();
+    const sort = jest.fn().mockReturnThis();
+    const skip = jest.fn().mockReturnThis();
+    const limit = jest.fn().mockResolvedValue([]);
+    Product.find.mockReturnValue({ populate, sort, skip, limit });
+    Product.countDocuments.mockResolvedValue(0);
+
+    const res = await request(app).get("/api/products?isBestSeller=true").set("Authorization", authHeader);
+
+    expect(res.status).toBe(200);
+    expect(Product.find).toHaveBeenCalledWith(expect.objectContaining({ isBestSeller: true }));
+  });
+});
+
+describe("POST /api/products — homepage curation on create", () => {
+  const basePayload = {
+    name: "Wave Pen Tablet",
+    category: validCategoryId,
+    price: 3499,
+    mrp: 3999,
+  };
+
+  beforeEach(() => {
+    Category.exists.mockResolvedValue(true);
+    Product.exists.mockResolvedValue(false);
+    Product.create.mockResolvedValue({ _id: "p1" });
+  });
+
+  it("leaves isFeatured/isBestSeller unset (false, null order) when not provided", async () => {
+    await request(app).post("/api/products").set("Authorization", authHeader).send(basePayload);
+
+    expect(Product.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isFeatured: false,
+        homepageFeaturedOrder: null,
+        isBestSeller: false,
+        homepageBestSellerOrder: null,
+      })
+    );
+  });
+
+  it("auto-assigns the next order slot when marked featured with no explicit order", async () => {
+    Product.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue({ homepageFeaturedOrder: 2 }),
+    });
+
+    await request(app)
+      .post("/api/products")
+      .set("Authorization", authHeader)
+      .send({ ...basePayload, isFeatured: true });
+
+    expect(Product.create).toHaveBeenCalledWith(expect.objectContaining({ isFeatured: true, homepageFeaturedOrder: 3 }));
+  });
+
+  it("assigns order 0 for the first featured product", async () => {
+    Product.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue(null),
+    });
+
+    await request(app)
+      .post("/api/products")
+      .set("Authorization", authHeader)
+      .send({ ...basePayload, isBestSeller: true });
+
+    expect(Product.create).toHaveBeenCalledWith(expect.objectContaining({ isBestSeller: true, homepageBestSellerOrder: 0 }));
+  });
+
+  it("respects an explicit order when provided alongside the flag", async () => {
+    await request(app)
+      .post("/api/products")
+      .set("Authorization", authHeader)
+      .send({ ...basePayload, isFeatured: true, homepageFeaturedOrder: 5 });
+
+    expect(Product.create).toHaveBeenCalledWith(expect.objectContaining({ isFeatured: true, homepageFeaturedOrder: 5 }));
+    expect(Product.findOne).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/products/:id — homepage curation on update", () => {
+  function mockExistingProduct(overrides = {}) {
+    const product = {
+      _id: "p1",
+      name: "Wave Pen Tablet",
+      slug: "wave-pen-tablet",
+      isFeatured: false,
+      homepageFeaturedOrder: null,
+      isBestSeller: false,
+      homepageBestSellerOrder: null,
+      save: jest.fn().mockResolvedValue(true),
+      ...overrides,
+    };
+    Product.findById.mockResolvedValue(product);
+    return product;
+  }
+
+  it("leaves curation fields untouched when not present in the request", async () => {
+    const product = mockExistingProduct({ isFeatured: true, homepageFeaturedOrder: 1 });
+
+    const res = await request(app).patch("/api/products/p1").set("Authorization", authHeader).send({ name: "New Name" });
+
+    expect(res.status).toBe(200);
+    expect(product.isFeatured).toBe(true);
+    expect(product.homepageFeaturedOrder).toBe(1);
+    expect(Product.findOne).not.toHaveBeenCalled();
+  });
+
+  it("nulls the order out when unmarking best-seller", async () => {
+    const product = mockExistingProduct({ isBestSeller: true, homepageBestSellerOrder: 4 });
+
+    await request(app).patch("/api/products/p1").set("Authorization", authHeader).send({ isBestSeller: false });
+
+    expect(product.isBestSeller).toBe(false);
+    expect(product.homepageBestSellerOrder).toBeNull();
+  });
+
+  it("nulls the order out when isBestSeller:false is sent alongside an order value", async () => {
+    const product = mockExistingProduct({ isBestSeller: true, homepageBestSellerOrder: 4 });
+
+    await request(app)
+      .patch("/api/products/p1")
+      .set("Authorization", authHeader)
+      .send({ isBestSeller: false, homepageBestSellerOrder: 9 });
+
+    expect(product.isBestSeller).toBe(false);
+    expect(product.homepageBestSellerOrder).toBeNull();
+  });
+
+  it("auto-assigns the next order slot when newly marked featured with no explicit order", async () => {
+    const product = mockExistingProduct();
+    Product.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue({ homepageFeaturedOrder: 0 }),
+    });
+
+    await request(app).patch("/api/products/p1").set("Authorization", authHeader).send({ isFeatured: true });
+
+    expect(product.isFeatured).toBe(true);
+    expect(product.homepageFeaturedOrder).toBe(1);
+  });
+
+  it("keeps the existing order when the flag is re-sent unchanged with no order given", async () => {
+    const product = mockExistingProduct({ isFeatured: true, homepageFeaturedOrder: 3 });
+
+    await request(app).patch("/api/products/p1").set("Authorization", authHeader).send({ isFeatured: true });
+
+    expect(product.homepageFeaturedOrder).toBe(3);
+    expect(Product.findOne).not.toHaveBeenCalled();
+  });
+
+  it("reorders an already-curated product when only the order field is sent", async () => {
+    const product = mockExistingProduct({ isFeatured: true, homepageFeaturedOrder: 3 });
+
+    await request(app).patch("/api/products/p1").set("Authorization", authHeader).send({ homepageFeaturedOrder: 7 });
+
+    expect(product.isFeatured).toBe(true);
+    expect(product.homepageFeaturedOrder).toBe(7);
+  });
 });
 
 describe("POST /api/products/:id/images", () => {

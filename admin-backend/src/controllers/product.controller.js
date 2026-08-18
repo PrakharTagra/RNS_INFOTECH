@@ -25,6 +25,46 @@ function generateSku() {
   return `RNS-${Date.now().toString(36).toUpperCase()}`;
 }
 
+// Homepage curation (Phase H1/H2). isFeatured/isBestSeller each pair with
+// an *Order field that controls display order within that rail; null
+// means "not curated for that rail" (see the note in models/Product.js).
+// The admin portal's order inputs (Phase H4) are the primary way order
+// gets set going forward, but this keeps the API self-consistent even
+// when only the boolean is sent:
+//   - unmarking (flag -> false) always nulls the order out, regardless
+//     of what was sent for the order field, since a null flag makes the
+//     order meaningless.
+//   - an explicit order is always respected as-is.
+//   - marking a product that wasn't already curated, with no explicit
+//     order, auto-assigns the next free slot (current max + 1) so it
+//     never ends up flagged with a null order.
+//   - re-sending the flag on an already-curated product, with no order
+//     change, leaves the existing order untouched.
+async function nextHomepageOrder(flagField, orderField) {
+  const top = await Product.findOne({ [flagField]: true })
+    .sort({ [orderField]: -1 })
+    .select(orderField)
+    .lean();
+  const topOrder = top && typeof top[orderField] === "number" ? top[orderField] : -1;
+  return topOrder + 1;
+}
+
+async function resolveHomepageCuration(body, current, flagField, orderField) {
+  const flagProvided = Object.prototype.hasOwnProperty.call(body, flagField);
+  const orderProvided = Object.prototype.hasOwnProperty.call(body, orderField);
+  const nextFlag = flagProvided ? body[flagField] : current.flag;
+
+  if (!nextFlag) return { flag: nextFlag, order: null };
+  if (orderProvided) return { flag: true, order: body[orderField] };
+  if (flagProvided && !current.flag) return { flag: true, order: await nextHomepageOrder(flagField, orderField) };
+  return { flag: true, order: current.order ?? (await nextHomepageOrder(flagField, orderField)) };
+}
+
+const HOMEPAGE_RAILS = [
+  ["isFeatured", "homepageFeaturedOrder"],
+  ["isBestSeller", "homepageBestSellerOrder"],
+];
+
 const SORT_OPTIONS = {
   newest: { createdAt: -1 },
   price_asc: { price: 1, _id: 1 },
@@ -36,7 +76,7 @@ const SORT_OPTIONS = {
 };
 
 const list = asyncHandler(async (req, res) => {
-  const { page, limit, search, category, brand, stock, isActive, isFeatured, sort } = req.query;
+  const { page, limit, search, category, brand, stock, isActive, isFeatured, isBestSeller, sort } = req.query;
   const filter = {};
   if (category) filter.category = category;
   if (brand) filter.brand = brand;
@@ -45,6 +85,7 @@ const list = asyncHandler(async (req, res) => {
   if (stock === "in-stock") filter.stock = { $gt: 5 };
   if (isActive !== undefined) filter.isActive = isActive;
   if (isFeatured !== undefined) filter.isFeatured = isFeatured;
+  if (isBestSeller !== undefined) filter.isBestSeller = isBestSeller;
   if (search) filter.$text = { $search: search };
 
   const skip = (page - 1) * limit;
@@ -71,7 +112,15 @@ const create = asyncHandler(async (req, res) => {
   const base = slugify(req.body.slug || req.body.name);
   const slug = await uniqueSlug(base);
   const sku = (req.body.sku || generateSku()).toUpperCase();
-  const product = await Product.create({ ...req.body, slug, sku });
+
+  const curation = {};
+  for (const [flagField, orderField] of HOMEPAGE_RAILS) {
+    const resolved = await resolveHomepageCuration(req.body, { flag: false, order: null }, flagField, orderField);
+    curation[flagField] = resolved.flag;
+    curation[orderField] = resolved.order;
+  }
+
+  const product = await Product.create({ ...req.body, slug, sku, ...curation });
   res.status(201).json({ product });
 });
 
@@ -85,6 +134,21 @@ const update = asyncHandler(async (req, res) => {
     product.slug = await uniqueSlug(base, product._id);
   }
   if (req.body.sku) req.body.sku = req.body.sku.toUpperCase();
+
+  for (const [flagField, orderField] of HOMEPAGE_RAILS) {
+    const flagProvided = Object.prototype.hasOwnProperty.call(req.body, flagField);
+    const orderProvided = Object.prototype.hasOwnProperty.call(req.body, orderField);
+    if (!flagProvided && !orderProvided) continue;
+    const resolved = await resolveHomepageCuration(
+      req.body,
+      { flag: product[flagField], order: product[orderField] },
+      flagField,
+      orderField
+    );
+    req.body[flagField] = resolved.flag;
+    req.body[orderField] = resolved.order;
+  }
+
   Object.assign(product, req.body);
   await product.save();
   res.json({ product });
