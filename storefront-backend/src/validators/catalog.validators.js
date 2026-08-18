@@ -7,7 +7,7 @@ const { z } = require("zod");
 // products staff have hidden by passing a query param.
 const listProductsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+  limit: z.coerce.number().int().min(1).max(200).optional().default(20),
   search: z.string().trim().optional(),
   category: z.string().trim().optional(),
   minPrice: z.coerce.number().min(0).optional(),
