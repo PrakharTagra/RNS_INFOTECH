@@ -16,7 +16,7 @@ function sanitize(value) {
 
 function log(levelName, message, context = {}) {
   if (LEVELS[levelName] > level) return;
-  const entry = { timestamp: new Date().toISOString(), level: levelName, service: process.env.SERVICE_NAME || 'storefront-backend', message: String(message), ...sanitize(context) };
+  const entry = { timestamp: new Date().toISOString(), level: levelName, service: process.env.SERVICE_NAME || 'admin-backend', message: String(message), ...sanitize(context) };
   process.stdout.write(JSON.stringify(entry) + '\n');
 }
 
