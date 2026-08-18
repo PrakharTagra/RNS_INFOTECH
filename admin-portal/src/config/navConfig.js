@@ -32,6 +32,7 @@ export const navConfig = [
     group: "People",
     items: [
       { label: "Customers", path: "/customers", icon: "user", phase: 5, status: "built" },
+      { label: "Leads", path: "/leads", icon: "inbox", phase: 20, status: "built" },
       { label: "Chat", path: "/chat", icon: "message", phase: 6, status: "built" },
       { label: "Reviews", path: "/reviews", icon: "star", phase: 8, status: "built" },
     ],

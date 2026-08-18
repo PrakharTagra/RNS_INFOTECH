@@ -22,6 +22,7 @@ const PaymentsListPage = lazy(() => import("./pages/payments/PaymentsListPage"))
 const PaymentDetailPage = lazy(() => import("./pages/payments/PaymentDetailPage"));
 const CustomersListPage = lazy(() => import("./pages/customers/CustomersListPage"));
 const CustomerDetailPage = lazy(() => import("./pages/customers/CustomerDetailPage"));
+const LeadsListPage = lazy(() => import("./pages/leads/LeadsListPage"));
 const ChatPage = lazy(() => import("./pages/chat/ChatPage"));
 const WebsitePage = lazy(() => import("./pages/website/WebsitePage"));
 const CouponsListPage = lazy(() => import("./pages/coupons/CouponsListPage"));
@@ -34,7 +35,7 @@ const ReturnsPage = lazy(() => import("./pages/returns/ReturnsPage"));
 
 import { getCurrentAdmin, onAdminUnauthorized } from "./lib/adminApi";
 
-const BUILT_PATHS = new Set(["/products", "/categories", "/brands", "/inventory", "/orders", "/payments", "/customers", "/chat", "/website", "/coupons", "/reviews", "/content", "/settings", "/staff", "/audit", "/returns"]);
+const BUILT_PATHS = new Set(["/products", "/categories", "/brands", "/inventory", "/orders", "/payments", "/customers", "/leads", "/chat", "/website", "/coupons", "/reviews", "/content", "/settings", "/staff", "/audit", "/returns"]);
 
 function RequireAdmin() {
   const location = useLocation();
@@ -125,6 +126,7 @@ export default function App() {
             <Route path="/payments/:id" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><PaymentDetailPage /></Suspense>} />
             <Route path="/customers" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><CustomersListPage /></Suspense>} />
             <Route path="/customers/:email" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><CustomerDetailPage /></Suspense>} />
+            <Route path="/leads" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><LeadsListPage /></Suspense>} />
             <Route path="/chat" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ChatPage /></Suspense>} />
             <Route path="/website" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><WebsitePage /></Suspense>} />
             <Route path="/coupons" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><CouponsListPage /></Suspense>} />

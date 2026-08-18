@@ -1,6 +1,6 @@
 const ROLE_PERMISSIONS = {
-  Owner: new Set(["catalog.write","inventory.write","orders.write","payments.refund","content.write","website.write","coupons.write","reviews.write","settings.write","staff.manage","audit.read","chat.write"]),
-  Manager: new Set(["catalog.write","inventory.write","orders.write","payments.refund","content.write","website.write","coupons.write","reviews.write","chat.write","audit.read","staff.manage"]),
+  Owner: new Set(["catalog.write","inventory.write","orders.write","payments.refund","content.write","website.write","coupons.write","reviews.write","leads.write","settings.write","staff.manage","audit.read","chat.write"]),
+  Manager: new Set(["catalog.write","inventory.write","orders.write","payments.refund","content.write","website.write","coupons.write","reviews.write","leads.write","chat.write","audit.read","staff.manage"]),
   Staff: new Set(["orders.write","chat.write"]),
 };
 export function getAdminRole(admin) { return admin?.role || "Staff"; }

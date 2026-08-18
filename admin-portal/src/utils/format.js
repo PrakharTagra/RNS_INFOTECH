@@ -23,6 +23,9 @@ export const STATUS_TONE = {
   exhausted: "neutral",
   published: "success",
   draft: "neutral",
+  new: "warning",
+  contacted: "info",
+  closed: "neutral",
 };
 
 export function statusLabel(status) {
