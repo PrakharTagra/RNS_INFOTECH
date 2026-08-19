@@ -78,13 +78,11 @@ describe("POST /api/payments/create-order", () => {
       deliveryFee: 0,
       tax: 0,
       discount: 0,
-      deliveryMethod: "standard",
       couponSnapshot: null,
       pricing: {
         subtotal: 3499, discount: 0, shippingFee: 199, deliveryFee: 0,
         tax: 0, taxRate: 0, taxableAmount: 3698, total: 3698,
-        deliveryMethod: "standard",
-        commerce: { freeShippingThreshold: 5000, flatShippingFee: 199, taxRate: 0, standardDeliveryFee: 0, expressDeliveryFee: 149 },
+        commerce: { freeShippingThreshold: 5000, flatShippingFee: 199, taxRate: 0, standardDeliveryFee: 0 },
       },
     });
     Payment.findOne.mockResolvedValue(null);
@@ -118,13 +116,11 @@ describe("POST /api/payments/create-order", () => {
       deliveryFee: 0,
       tax: 0,
       discount: 0,
-      deliveryMethod: "standard",
       couponSnapshot: null,
       pricing: {
         subtotal: 3499, discount: 0, shippingFee: 199, deliveryFee: 0,
         tax: 0, taxRate: 0, taxableAmount: 3698, total: 3698,
-        deliveryMethod: "standard",
-        commerce: { freeShippingThreshold: 5000, flatShippingFee: 199, taxRate: 0, standardDeliveryFee: 0, expressDeliveryFee: 149 },
+        commerce: { freeShippingThreshold: 5000, flatShippingFee: 199, taxRate: 0, standardDeliveryFee: 0 },
       },
     });
     Payment.findOne.mockResolvedValue(null);

@@ -5,8 +5,7 @@ describe("central pricing engine", () => {
     freeShippingThreshold: 5000,
     flatShippingFee: 199,
     taxRate: 18,
-    standardDeliveryFee: 0,
-    expressDeliveryFee: 149,
+    standardDeliveryFee: 149,
   };
 
   it("calculates subtotal, coupon, shipping, delivery fee, tax and final total deterministically", () => {
@@ -16,7 +15,6 @@ describe("central pricing engine", () => {
         { price: 500, quantity: 1 },
       ],
       coupon: { type: "percent", value: 10 },
-      deliveryMethod: "express",
       commerce,
     });
 
@@ -28,7 +26,6 @@ describe("central pricing engine", () => {
       taxableAmount: 2598,
       tax: 467.64,
       total: 3065.64,
-      deliveryMethod: "express",
     });
   });
 
@@ -36,8 +33,7 @@ describe("central pricing engine", () => {
     const result = calculatePricing({
       items: [{ price: 5000, quantity: 1 }],
       coupon: null,
-      deliveryMethod: "standard",
-      commerce: { ...commerce, taxRate: 0 },
+      commerce: { ...commerce, standardDeliveryFee: 0, taxRate: 0 },
     });
 
     expect(result.shippingFee).toBe(0);

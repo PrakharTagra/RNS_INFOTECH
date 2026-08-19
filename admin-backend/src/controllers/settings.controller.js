@@ -54,7 +54,6 @@ const updateCommerce = asyncHandler(async (req, res) => {
       ? current.taxRate
       : Math.min(100, numericNonNegative("taxRate")),
     standardDeliveryFee: numericNonNegative("standardDeliveryFee"),
-    expressDeliveryFee: numericNonNegative("expressDeliveryFee"),
   };
 
   await settings.save();

@@ -21,8 +21,7 @@ beforeEach(() => {
       freeShippingThreshold: 5000,
       flatShippingFee: 199,
       taxRate: 18,
-      standardDeliveryFee: 0,
-      expressDeliveryFee: 149,
+      standardDeliveryFee: 149,
     },
   })});
 });
@@ -49,7 +48,6 @@ describe("POST /api/checkout/quote", () => {
       .set("Authorization", authHeader)
       .send({
         items: [{ product: productId, quantity: 2, price: 1 }],
-        deliveryMethod: "express",
       });
 
     expect(res.status).toBe(200);
@@ -88,7 +86,6 @@ describe("POST /api/checkout/quote", () => {
       .send({
         items: [{ product: productId, quantity: 1 }],
         couponCode: "save10",
-        deliveryMethod: "standard",
       });
 
     expect(res.status).toBe(200);
@@ -97,8 +94,9 @@ describe("POST /api/checkout/quote", () => {
       subtotal: 3499,
       discount: 349.9,
       shippingFee: 199,
-      tax: 602.66,
-      total: 3950.76,
+      deliveryFee: 149,
+      tax: 629.48,
+      total: 4126.58,
     });
   });
 });

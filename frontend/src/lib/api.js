@@ -185,7 +185,7 @@ export function getInvoice(orderId) {
   });
 }
 
-export function getCheckoutQuote({ items, couponCode, deliveryMethod = "standard" }) {
+export function getCheckoutQuote({ items, couponCode }) {
   return apiRequest("/checkout/quote", {
     method: "POST",
     body: {
@@ -194,7 +194,6 @@ export function getCheckoutQuote({ items, couponCode, deliveryMethod = "standard
         quantity: Number(item.qty || item.quantity || 1),
       })),
       ...(couponCode ? { couponCode } : {}),
-      deliveryMethod,
     },
     authRequired: true,
   });
@@ -248,7 +247,6 @@ export function normalizeOrder(order = {}) {
     discount,
     couponCode: order.couponCode || null,
     total: payableTotal,
-    deliveryMethod: order.deliveryMethod || "standard",
     shippingAddress: {
       name: shipping.fullName || shipping.name || "",
       phone: shipping.phone || "",

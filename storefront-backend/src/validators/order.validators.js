@@ -26,7 +26,6 @@ const shippingAddressInputSchema = z.object({
 const placeOrderSchema = z.object({
   items: z.array(orderItemInputSchema).min(1, "An order must contain at least one item."),
   shippingAddress: shippingAddressInputSchema,
-  deliveryMethod: z.enum(["standard", "express"]).optional().default("standard"),
   // Phase BC (Coupons) — optional. order.controller.js re-validates this
   // server-side against the current Coupon doc exactly like
   // POST /coupons/validate does; nothing about the discount itself is

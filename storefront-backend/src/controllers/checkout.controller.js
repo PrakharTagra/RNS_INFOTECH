@@ -26,7 +26,7 @@ function buildServerPricedItems(requestedItems, products) {
 // stock and coupon validity are all read server-side. No client total is
 // accepted or echoed as authoritative.
 const getQuote = asyncHandler(async (req, res) => {
-  const { items: requestedItems, couponCode, deliveryMethod } = req.body;
+  const { items: requestedItems, couponCode } = req.body;
   const productIds = requestedItems.map((item) => item.product);
   const products = await Product.find({ _id: { $in: productIds }, isActive: true });
   const items = buildServerPricedItems(requestedItems, products);
@@ -38,7 +38,7 @@ const getQuote = asyncHandler(async (req, res) => {
   }
 
   const commerce = await getCommerceSettings();
-  const pricing = calculatePricing({ items, coupon, deliveryMethod, commerce });
+  const pricing = calculatePricing({ items, coupon, commerce });
 
   res.json({
     quote: {

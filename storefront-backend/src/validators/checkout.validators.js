@@ -10,7 +10,6 @@ const checkoutItemSchema = z.object({
 const checkoutQuoteSchema = z.object({
   items: z.array(checkoutItemSchema).min(1, "Cart cannot be empty."),
   couponCode: z.string().trim().min(1).max(50).optional(),
-  deliveryMethod: z.enum(["standard", "express"]).optional().default("standard"),
 });
 
 module.exports = { checkoutQuoteSchema };

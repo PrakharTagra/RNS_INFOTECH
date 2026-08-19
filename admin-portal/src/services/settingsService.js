@@ -1,6 +1,6 @@
 import { adminApiRequest, getStoredAdminAuth } from "../lib/adminApi";
 
-const FALLBACK_COMMERCE = { freeShippingThreshold: 5000, flatShippingFee: 199, lowStockThreshold: 8, taxRate: 0, standardDeliveryFee: 0, expressDeliveryFee: 149 };
+const FALLBACK_COMMERCE = { freeShippingThreshold: 5000, flatShippingFee: 199, lowStockThreshold: 8, taxRate: 0, standardDeliveryFee: 0 };
 let commerceCache = { ...FALLBACK_COMMERCE };
 
 export async function getStoreProfile() {

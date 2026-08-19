@@ -50,9 +50,8 @@ export default function CheckoutPage() {
   const mode = location.state?.mode || "cart"; // "cart" | "buy-now"
 
   // Delivery is fixed (8-10 days, standard) and payment is online-only —
-  // neither is a user-facing choice anymore, so this is a constant
-  // rather than state.
-  const selectedDeliveryId = "standard";
+  // neither is a user-facing choice anymore, and the backend no longer
+  // accepts a delivery method at all.
 
   const [selectedAddressId, setSelectedAddressId] = useState(defaultId || addresses[0]?.id || null);
   const [addingAddress, setAddingAddress] = useState(addresses.length === 0);
@@ -93,7 +92,6 @@ export default function CheckoutPage() {
       const response = await getCheckoutQuote({
         items,
         couponCode,
-        deliveryMethod: selectedDeliveryId,
       });
       setQuote(response?.quote || null);
     } catch (err) {
@@ -106,10 +104,10 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     refreshQuote();
-    // Quote intentionally refreshes when cart contents or delivery choice changes.
-    // Coupon application/removal calls it explicitly so invalid codes can be surfaced.
+    // Coupon application/removal calls refreshQuote explicitly so invalid
+    // codes can be surfaced; this effect just covers cart contents changing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, selectedDeliveryId]);
+  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -160,7 +158,6 @@ export default function CheckoutPage() {
       const response = await getCheckoutQuote({
         items,
         couponCode: code,
-        deliveryMethod: selectedDeliveryId,
       });
       const nextQuote = response?.quote;
       if (!nextQuote) throw new Error("The checkout quote was empty.");
@@ -200,7 +197,6 @@ export default function CheckoutPage() {
         items,
         shippingAddress: selectedAddress,
         couponCode: appliedCoupon?.code,
-        deliveryMethod: selectedDeliveryId,
       });
 
       // The quote is advisory until order creation. The backend recalculates

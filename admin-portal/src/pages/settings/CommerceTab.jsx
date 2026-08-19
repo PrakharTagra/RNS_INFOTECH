@@ -33,7 +33,6 @@ export default function CommerceTab() {
         lowStockThreshold: Math.max(0, Number(form.lowStockThreshold) || 0),
         taxRate: Math.max(0, Number(form.taxRate) || 0),
         standardDeliveryFee: Math.max(0, Number(form.standardDeliveryFee) || 0),
-        expressDeliveryFee: Math.max(0, Number(form.expressDeliveryFee) || 0),
       });
       if (updated) setForm(updated);
       showToast("Commerce settings updated");
@@ -80,18 +79,14 @@ export default function CommerceTab() {
         <p style={{ fontSize: 12.5, color: "var(--admin-ink-faint)", marginBottom: 14 }}>
           These values are persisted and used by the backend pricing engine for quotes, orders and payments.
         </p>
-        <div style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr 1fr" }}>
+        <div style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr" }}>
           <FormField label="GST rate" htmlFor="cs-tax" hint="GST percentage, e.g. 18 for 18%. Product prices are treated as GST-exclusive.">
             <input id="cs-tax" type="number" min="0" step="0.01" className="admin-input"
               value={form.taxRate ?? 0} onChange={(e) => set("taxRate", e.target.value)} />
           </FormField>
-          <FormField label="Standard delivery fee" htmlFor="cs-standard" hint="In ₹.">
+          <FormField label="Delivery fee" htmlFor="cs-standard" hint="Charged on every order, in ₹. Delivery is no longer a customer choice — every order ships within 8-10 days at this one fee.">
             <input id="cs-standard" type="number" min="0" step="0.01" className="admin-input"
               value={form.standardDeliveryFee ?? 0} onChange={(e) => set("standardDeliveryFee", e.target.value)} />
-          </FormField>
-          <FormField label="Express delivery fee" htmlFor="cs-express" hint="In ₹.">
-            <input id="cs-express" type="number" min="0" step="0.01" className="admin-input"
-              value={form.expressDeliveryFee ?? 149} onChange={(e) => set("expressDeliveryFee", e.target.value)} />
           </FormField>
         </div>
       </div>

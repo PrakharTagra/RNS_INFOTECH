@@ -57,7 +57,6 @@ const placeOrder = asyncHandler(async (req, res) => {
     items: requestedItems,
     shippingAddress,
     couponCode: requestedCouponCode,
-    deliveryMethod = "standard",
   } = req.body;
 
   const productIds = requestedItems.map((requested) => requested.product);
@@ -85,7 +84,7 @@ const placeOrder = asyncHandler(async (req, res) => {
   }
 
   const commerce = await getCommerceSettings();
-  const pricing = calculatePricing({ items, coupon, deliveryMethod, commerce });
+  const pricing = calculatePricing({ items, coupon, commerce });
   const siteSettings = await SiteSettings.findOne({ key: "global" }).lean();
   const sellerProfile = siteSettings?.storeProfile || {};
   const taxBreakdown = splitTax({
@@ -126,7 +125,6 @@ const placeOrder = asyncHandler(async (req, res) => {
         igstRate: taxBreakdown.igstRate,
         igstAmount: taxBreakdown.igstAmount,
       },
-      deliveryMethod: pricing.deliveryMethod,
       shippingAddress: { ...shippingAddress, gstin: shippingAddress.gstin || "" },
       status: "pending",
       reservationStatus: "pending",
@@ -134,7 +132,7 @@ const placeOrder = asyncHandler(async (req, res) => {
       couponCode: coupon ? coupon.code : null,
       discount: pricing.discount,
       couponSnapshot: coupon ? { code: coupon.code, type: coupon.type, value: coupon.value } : null,
-      pricing: { currency: pricing.currency, subtotal: pricing.subtotal, discount: pricing.discount, shippingFee: pricing.shippingFee, deliveryFee: pricing.deliveryFee, tax: pricing.tax, taxRate: pricing.taxRate, taxPolicy: pricing.taxPolicy, taxableAmount: pricing.taxableAmount, total: pricing.total, deliveryMethod: pricing.deliveryMethod, commerce: pricing.commerce },
+      pricing: { currency: pricing.currency, subtotal: pricing.subtotal, discount: pricing.discount, shippingFee: pricing.shippingFee, deliveryFee: pricing.deliveryFee, tax: pricing.tax, taxRate: pricing.taxRate, taxPolicy: pricing.taxPolicy, taxableAmount: pricing.taxableAmount, total: pricing.total, commerce: pricing.commerce },
     });
 
     const { decrementStock } = require("../services/stock.service");

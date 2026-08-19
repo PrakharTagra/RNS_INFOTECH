@@ -1,13 +1,18 @@
 const SiteSettings = require("../models/SiteSettings");
 const { computeDiscount } = require("./coupon.service");
 
+// Delivery is no longer a customer choice — every order ships the same
+// way, so there is a single delivery fee rather than a per-method table.
+// The settings field is still named `standardDeliveryFee` (not renamed
+// to something like `deliveryFee`) purely so an already-saved
+// SiteSettings document with a real, admin-configured value doesn't
+// silently fall back to the default the moment this deploys.
 const DEFAULT_COMMERCE = {
   freeShippingThreshold: 5000,
   flatShippingFee: 199,
   lowStockThreshold: 8,
   taxRate: 0,
   standardDeliveryFee: 0,
-  expressDeliveryFee: 149,
 };
 
 function roundMoney(value) {
@@ -25,18 +30,12 @@ function normalizeCommerce(raw = {}) {
     flatShippingFee: number(c.flatShippingFee, DEFAULT_COMMERCE.flatShippingFee),
     taxRate: number(c.taxRate, DEFAULT_COMMERCE.taxRate),
     standardDeliveryFee: number(c.standardDeliveryFee, DEFAULT_COMMERCE.standardDeliveryFee),
-    expressDeliveryFee: number(c.expressDeliveryFee, DEFAULT_COMMERCE.expressDeliveryFee),
   };
 }
 
 async function getCommerceSettings() {
   const settings = await SiteSettings.findOne({ key: "global" }).lean();
   return normalizeCommerce(settings?.commerce);
-}
-
-function getDeliveryFee(deliveryMethod, commerce) {
-  if (deliveryMethod === "express") return roundMoney(commerce.expressDeliveryFee);
-  return roundMoney(commerce.standardDeliveryFee);
 }
 
 /**
@@ -46,7 +45,7 @@ function getDeliveryFee(deliveryMethod, commerce) {
  * must never be passed here until the caller has replaced them with Product
  * document values.
  */
-function calculatePricing({ items = [], coupon = null, deliveryMethod = "standard", commerce }) {
+function calculatePricing({ items = [], coupon = null, commerce }) {
   const settings = normalizeCommerce(commerce);
   const subtotal = roundMoney(items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0));
   const discount = coupon ? roundMoney(Math.min(computeDiscount(coupon, subtotal), subtotal)) : 0;
@@ -59,7 +58,7 @@ function calculatePricing({ items = [], coupon = null, deliveryMethod = "standar
       ? roundMoney(settings.flatShippingFee)
       : 0;
 
-  const deliveryFee = getDeliveryFee(deliveryMethod, settings);
+  const deliveryFee = roundMoney(settings.standardDeliveryFee);
   const taxableAmount = roundMoney(discountedSubtotal + shippingFee + deliveryFee);
   const tax = roundMoney((taxableAmount * settings.taxRate) / 100);
   const total = roundMoney(taxableAmount + tax);
@@ -75,7 +74,6 @@ function calculatePricing({ items = [], coupon = null, deliveryMethod = "standar
     taxPolicy: { priceIncludesTax: false, taxType: "GST" },
     taxableAmount,
     total,
-    deliveryMethod: deliveryMethod === "express" ? "express" : "standard",
     commerce: settings,
   };
 }
@@ -97,7 +95,6 @@ function calculateStoredOrderPricing(order) {
       taxPolicy: { priceIncludesTax: false, taxType: "GST" },
       taxableAmount: roundMoney(order.itemsTotal || 0),
       total: roundMoney(order.itemsTotal || 0),
-      deliveryMethod: order.deliveryMethod || "standard",
       commerce: DEFAULT_COMMERCE,
       legacy: true,
     };
@@ -109,7 +106,6 @@ function calculateStoredOrderPricing(order) {
   return calculatePricing({
     items: order.items || [],
     coupon,
-    deliveryMethod: order.deliveryMethod || pricing.deliveryMethod || "standard",
     commerce,
   });
 }

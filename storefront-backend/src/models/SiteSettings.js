@@ -6,7 +6,6 @@ const DEFAULT_COMMERCE = {
   lowStockThreshold: 8,
   taxRate: 0,
   standardDeliveryFee: 0,
-  expressDeliveryFee: 149,
 };
 
 const siteSettingsSchema = new mongoose.Schema(

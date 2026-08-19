@@ -88,7 +88,6 @@ const orderSchema = new mongoose.Schema(
     taxRate: { type: Number, default: 0, min: 0 },
     taxPolicy: { type: mongoose.Schema.Types.Mixed, default: { priceIncludesTax: false, taxType: "GST" } },
     taxBreakdown: { type: mongoose.Schema.Types.Mixed, default: null },
-    deliveryMethod: { type: String, enum: ["standard", "express"], default: "standard" },
     shippingAddress: { type: shippingAddressSchema, required: true },
     // Coupon and discount are persisted as an audit of the server calculation.
     couponCode: { type: String, default: null },
