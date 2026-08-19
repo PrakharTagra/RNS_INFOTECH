@@ -3,27 +3,15 @@ const Order = require("../models/Order");
 
 const TRANSITIONS = Object.freeze({
   pending: ["confirmed", "cancelled"],
-  confirmed: ["packed", "cancelled"],
-  packed: ["shipped", "cancelled"],
-  shipped: ["out-for-delivery"],
-  "out-for-delivery": ["delivered"],
-  delivered: ["return-requested"],
-  "return-requested": ["returned"],
-  returned: ["refunded"],
+  confirmed: ["shipped", "cancelled"],
+  shipped: [],
   cancelled: [],
-  refunded: [],
 });
 
 const TIMESTAMP_FIELDS = {
   confirmed: "confirmedAt",
-  packed: "packedAt",
   shipped: "shippedAt",
-  "out-for-delivery": "outForDeliveryAt",
-  delivered: "deliveredAt",
   cancelled: "cancelledAt",
-  "return-requested": "returnRequestedAt",
-  returned: "returnedAt",
-  refunded: "refundedAt",
 };
 
 function canTransition(from, to) {

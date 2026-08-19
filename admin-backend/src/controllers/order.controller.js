@@ -49,15 +49,16 @@ async function transition(req, res, to) {
   res.json({ order: updated });
 }
 
+// Admin's role is exactly three actions on an order, in this order:
+// confirm (pending -> confirmed), ship (confirmed -> shipped, with
+// courier + tracking), or cancel (pending/confirmed -> cancelled).
+// Nothing else — see PROGRESS_ORDER_SIMPLIFICATION.md.
 const confirm = asyncHandler((req, res) => transition(req, res, "confirmed"));
-const pack = asyncHandler((req, res) => transition(req, res, "packed"));
-const outForDelivery = asyncHandler((req, res) => transition(req, res, "out-for-delivery"));
-const deliver = asyncHandler((req, res) => transition(req, res, "delivered"));
 
 const ship = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) throw ApiError.notFound("Order not found.");
-  if (order.status !== "packed") throw ApiError.conflict(`Cannot ship an order in "${order.status}" status — it must be packed first.`);
+  if (order.status !== "confirmed") throw ApiError.conflict(`Cannot ship an order in "${order.status}" status — it must be confirmed first.`);
   const updated = await transitionOrder(order, "shipped", { actorType: "admin", actorId: req.admin?._id || null, note: `${req.body.courierName} / ${req.body.trackingId}` });
   updated.courierName = req.body.courierName;
   updated.trackingId = req.body.trackingId;
@@ -68,7 +69,7 @@ const ship = asyncHandler(async (req, res) => {
 const cancel = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) throw ApiError.notFound("Order not found.");
-  if (!["pending", "confirmed", "packed"].includes(order.status)) throw ApiError.conflict(`Cannot cancel an order in "${order.status}" status.`);
+  if (!["pending", "confirmed"].includes(order.status)) throw ApiError.conflict(`Cannot cancel an order in "${order.status}" status.`);
 
   const paidPayment = await Payment.findOne({ order: order._id, status: "paid" });
   if (paidPayment) {
@@ -83,7 +84,4 @@ const cancel = asyncHandler(async (req, res) => {
   res.json({ order: updated });
 });
 
-const requestReturn = asyncHandler(async (req, res) => transition(req, res, "return-requested"));
-const markReturned = asyncHandler(async (req, res) => transition(req, res, "returned"));
-
-module.exports = { list, getById, confirm, pack, ship, outForDelivery, deliver, cancel, requestReturn, markReturned };
+module.exports = { list, getById, confirm, ship, cancel };

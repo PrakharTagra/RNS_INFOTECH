@@ -1,8 +1,10 @@
 const Order = require("../models/Order");
 const Payment = require("../models/Payment");
+const User = require("../models/User");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 const { env } = require("../config/env");
+const { sendTransactionalEmail } = require("../services/email.service");
 const { calculateStoredOrderPricing, pricingMatchesOrder } = require("../services/pricing.service");
 const { consumeOrderReservation, releaseFailedPaymentReservation } = require("../services/stock.service");
 const { consumeCoupon, releaseCoupon } = require("../services/coupon.service");
@@ -49,6 +51,14 @@ async function settlePaidPayment(payment, { paymentId, method = null } = {}) {
   if (paidOrder) {
     await consumeOrderReservation(paidOrder);
     if (paidOrder.couponReservationId) await consumeCoupon(paidOrder.couponReservationId);
+    // The single gate that makes this order exist for the customer:
+    // it only appears in "My Orders" / counts toward admin dashboard
+    // revenue once this is set. Set once, never unset, never touched
+    // anywhere else in either backend.
+    if (!paidOrder.paymentVerifiedAt) {
+      await Order.updateOne({ _id: paidOrder._id, paymentVerifiedAt: null }, { $set: { paymentVerifiedAt: new Date() } });
+      paidOrder.paymentVerifiedAt = new Date();
+    }
     try {
       const user = await User.findById(paidOrder.user).select("email").lean();
       if (user?.email) {
@@ -79,7 +89,7 @@ async function failPayment(payment, reason, status = "failed") {
   await releaseFailedPaymentReservation(payment.order, reason);
   const order = await Order.findById(payment.order);
   if (order?.couponReservationId) await releaseCoupon(order.couponReservationId, reason);
-  if (order && ["pending", "confirmed", "packed"].includes(order.status) && order.reservationStatus !== "consumed") {
+  if (order && ["pending", "confirmed"].includes(order.status) && order.reservationStatus !== "consumed") {
     try { await transitionOrder(order, "cancelled", { actorType: "system", note: reason }); } catch (_) {}
   }
   return saved;

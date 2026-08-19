@@ -48,18 +48,9 @@ const shippingAddressSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const ORDER_STATUSES = [
-  "pending",
-  "confirmed",
-  "packed",
-  "shipped",
-  "out-for-delivery",
-  "delivered",
-  "cancelled",
-  "return-requested",
-  "returned",
-  "refunded",
-];
+// Simplified order lifecycle (see PROGRESS_ORDER_SIMPLIFICATION.md):
+//   pending -> confirmed -> shipped (terminal), or pending/confirmed -> cancelled (terminal).
+const ORDER_STATUSES = ["pending", "confirmed", "shipped", "cancelled"];
 
 const orderSchema = new mongoose.Schema(
   {
@@ -96,19 +87,18 @@ const orderSchema = new mongoose.Schema(
     paymentCreationLockUntil: { type: Date, default: null, index: true },
     couponReservationId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true },
     status: { type: String, enum: ORDER_STATUSES, default: "pending", index: true },
+    // Set exactly once by storefront-backend's payment.controller.js the
+    // moment Razorpay payment is verified. Dashboard revenue/growth
+    // aggregates below must always filter on this, not just on `status`,
+    // per the "only successful orders count as sales" requirement.
+    paymentVerifiedAt: { type: Date, default: null, index: true },
+    deliveryEstimate: { type: String, default: "8-10 days" },
     courierName: { type: String, default: null },
     trackingId: { type: String, default: null },
     confirmedAt: { type: Date, default: null },
-    packedAt: { type: Date, default: null },
     shippedAt: { type: Date, default: null },
-    outForDeliveryAt: { type: Date, default: null },
-    deliveredAt: { type: Date, default: null },
     cancelledAt: { type: Date, default: null },
     cancelReason: { type: String, default: null },
-    returnRequestedAt: { type: Date, default: null },
-    returnReason: { type: String, default: null },
-    returnedAt: { type: Date, default: null },
-    refundedAt: { type: Date, default: null },
     statusHistory: [{
       status: { type: String, enum: ORDER_STATUSES, required: true },
       at: { type: Date, default: Date.now },

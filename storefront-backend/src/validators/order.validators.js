@@ -36,19 +36,8 @@ const placeOrderSchema = z.object({
 const listMyOrdersQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
-  status: z.enum(["pending", "confirmed", "packed", "shipped", "out-for-delivery", "delivered", "cancelled", "return-requested", "returned", "refunded"]).optional(),
+  status: z.enum(["pending", "confirmed", "shipped", "cancelled"]).optional(),
 });
 
 const orderActionSchema = z.object({ reason: z.string().trim().max(300).optional() });
-const returnItemSchema = z.object({
-  product: z.string().trim().regex(OBJECT_ID_RE, "product must be a valid id"),
-  quantity: z.coerce.number().int().min(1).max(50),
-  reason: z.string().trim().max(300).optional(),
-});
-const returnRequestSchema = z.object({
-  reason: z.string().trim().min(2).max(300),
-  comments: z.string().trim().max(2000).optional().default(""),
-  evidence: z.array(z.string().trim().url().max(500)).max(5).optional().default([]),
-  items: z.array(returnItemSchema).max(50).optional(),
-});
-module.exports = { placeOrderSchema, listMyOrdersQuerySchema, orderActionSchema, returnRequestSchema };
+module.exports = { placeOrderSchema, listMyOrdersQuerySchema, orderActionSchema };

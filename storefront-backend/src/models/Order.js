@@ -54,18 +54,14 @@ const shippingAddressSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const ORDER_STATUSES = [
-  "pending",
-  "confirmed",
-  "packed",
-  "shipped",
-  "out-for-delivery",
-  "delivered",
-  "cancelled",
-  "return-requested",
-  "returned",
-  "refunded",
-];
+// Simplified order lifecycle (see PROGRESS_ORDER_SIMPLIFICATION.md):
+//   pending   — payment verified, awaiting admin confirmation
+//   confirmed — admin has confirmed the order
+//   shipped   — admin has shipped the order (courierName + trackingId set); terminal
+//   cancelled — cancelled before shipping; terminal
+// An order row only ever exists for a customer once payment is verified —
+// see paymentVerifiedAt below and payment.controller.js's settlePaidPayment.
+const ORDER_STATUSES = ["pending", "confirmed", "shipped", "cancelled"];
 
 const orderSchema = new mongoose.Schema(
   {
@@ -101,22 +97,26 @@ const orderSchema = new mongoose.Schema(
     paymentCreationLockUntil: { type: Date, default: null, index: true },
     couponReservationId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true },
     status: { type: String, enum: ORDER_STATUSES, default: "pending", index: true },
+    // Set exactly once, by payment.controller.js's settlePaidPayment, the
+    // moment Razorpay payment is verified (client-callback signature check
+    // OR the webhook — whichever settles first). This is the single gate
+    // that decides whether a customer's order is visible in "My Orders" /
+    // whether admin-backend's dashboard counts it as a successful sale.
+    // Never set anywhere else, never unset.
+    paymentVerifiedAt: { type: Date, default: null, index: true },
+    // Fixed at order placement, shown to the customer throughout checkout
+    // and order tracking. Not derived from courier data — this store's
+    // delivery promise is a flat 8-10 day estimate, not per-order ETAs.
+    deliveryEstimate: { type: String, default: "8-10 days" },
     // The four fields below are set by admin-backend only (confirm/ship/
     // cancel) — storefront-backend never writes to them after creation,
     // it only ever reads them back for the customer's order-tracking UI.
     courierName: { type: String, default: null },
     trackingId: { type: String, default: null },
     confirmedAt: { type: Date, default: null },
-    packedAt: { type: Date, default: null },
     shippedAt: { type: Date, default: null },
-    outForDeliveryAt: { type: Date, default: null },
-    deliveredAt: { type: Date, default: null },
     cancelledAt: { type: Date, default: null },
     cancelReason: { type: String, default: null },
-    returnRequestedAt: { type: Date, default: null },
-    returnReason: { type: String, default: null },
-    returnedAt: { type: Date, default: null },
-    refundedAt: { type: Date, default: null },
     statusHistory: [{
       status: { type: String, enum: ORDER_STATUSES, required: true },
       at: { type: Date, default: Date.now },

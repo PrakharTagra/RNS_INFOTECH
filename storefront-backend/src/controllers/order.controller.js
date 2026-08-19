@@ -10,7 +10,6 @@ const { env } = require("../config/env");
 const SiteSettings = require("../models/SiteSettings");
 const { splitTax } = require("../services/tax.service");
 const { getOrCreateInvoice } = require("../services/invoice.service");
-const ReturnRequest = require("../models/ReturnRequest");
 const User = require("../models/User");
 const { sendTransactionalEmail } = require("../services/email.service");
 
@@ -180,7 +179,10 @@ const placeOrder = asyncHandler(async (req, res) => {
 // client, so there's no way to request someone else's orders.
 const listMyOrders = asyncHandler(async (req, res) => {
   const { page, limit, status } = req.query;
-  const filter = { user: req.auth.userId };
+  // An order is only ever shown to the customer once payment is verified —
+  // see Order.js's paymentVerifiedAt and payment.controller.js's
+  // settlePaidPayment. This filter is not optional/overridable by the client.
+  const filter = { user: req.auth.userId, paymentVerifiedAt: { $ne: null } };
   if (status) filter.status = status;
 
   const [orders, total] = await Promise.all([
@@ -205,7 +207,7 @@ const getMyInvoice = asyncHandler(async (req, res) => {
 });
 
 const getMyOrderById = asyncHandler(async (req, res) => {
-  const order = await Order.findOne({ _id: req.params.id, user: req.auth.userId });
+  const order = await Order.findOne({ _id: req.params.id, user: req.auth.userId, paymentVerifiedAt: { $ne: null } });
   if (!order) throw ApiError.notFound("Order not found.");
   const [withPaymentStatus] = await attachPaymentStatus([order]);
   res.json({ order: withPaymentStatus });
@@ -214,7 +216,7 @@ const getMyOrderById = asyncHandler(async (req, res) => {
 const cancelMyOrder = asyncHandler(async (req, res) => {
   const order = await Order.findOne({ _id: req.params.id, user: req.auth.userId });
   if (!order) throw ApiError.notFound("Order not found.");
-  if (!["pending", "confirmed", "packed"].includes(order.status)) {
+  if (!["pending", "confirmed"].includes(order.status)) {
     throw ApiError.conflict(`This order cannot be cancelled in "${order.status}" status.`);
   }
 
@@ -271,41 +273,4 @@ const cancelMyOrder = asyncHandler(async (req, res) => {
   res.json({ order: withPaymentStatus });
 });
 
-const requestReturn = asyncHandler(async (req, res) => {
-  const order = await Order.findOne({ _id: req.params.id, user: req.auth.userId });
-  if (!order) throw ApiError.notFound("Order not found.");
-  if (order.status !== "delivered") throw ApiError.conflict("Only delivered orders can have a return requested.");
-  const deliveredAt = order.deliveredAt || order.updatedAt || order.createdAt;
-  const windowDays = Math.max(1, Number(env.returnWindowDays || 7));
-  if (Date.now() - new Date(deliveredAt).getTime() > windowDays * 86400000) throw ApiError.conflict(`The ${windowDays}-day return window has expired.`);
-  if (await ReturnRequest.exists({ order: order._id })) throw ApiError.conflict("A return request already exists for this order.");
-
-  const requestedItems = req.body.items?.length ? req.body.items : order.items.map(item => ({ product:String(item.product), quantity:item.quantity, reason:req.body.reason }));
-  const byProduct = new Map(order.items.map(item => [String(item.product), item]));
-  const items = requestedItems.map(item => {
-    const source=byProduct.get(String(item.product));
-    if(!source || item.quantity<1 || item.quantity>source.quantity) throw ApiError.badRequest("Return item quantity is invalid.");
-    return { product:source.product, name:source.name, sku:source.sku||"", quantity:item.quantity, reason:String(item.reason || req.body.reason || "Return requested").trim() };
-  });
-  let rr;
-  try {
-    rr=await ReturnRequest.create({
-      order:order._id,user:req.auth.userId,items,reason:String(req.body.reason).trim(),
-      comments:String(req.body.comments||"").trim(),evidence:Array.isArray(req.body.evidence)?req.body.evidence:[],
-      status:"requested",statusHistory:[{status:"requested",actorType:"customer",actorId:req.auth.userId,note:String(req.body.reason).trim()}],
-    });
-    await transitionOrder(order,"return-requested",{actorType:"customer",actorId:req.auth.userId,note:String(req.body.reason).trim()});
-  } catch (err) {
-    if (rr?._id) await ReturnRequest.deleteOne({ _id:rr._id }).catch(()=>{});
-    throw err;
-  }
-  res.status(201).json({ returnRequest:rr });
-});
-
-const getMyReturn = asyncHandler(async (req,res)=>{
-  const rr=await ReturnRequest.findOne({order:req.params.id,user:req.auth.userId}).lean();
-  if(!rr) throw ApiError.notFound("Return request not found.");
-  res.json({returnRequest:rr});
-});
-
-module.exports = { placeOrder, listMyOrders, getMyOrderById, getMyInvoice, cancelMyOrder, requestReturn, getMyReturn };
+module.exports = { placeOrder, listMyOrders, getMyOrderById, getMyInvoice, cancelMyOrder };

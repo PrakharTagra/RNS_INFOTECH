@@ -63,7 +63,7 @@ async function reconcilePayment(payment) {
   const current = await Payment.findById(payment._id);
   if (current?.status === "refunded") {
     const order = await Order.findById(current.order);
-    if (order && ["pending", "confirmed", "packed"].includes(order.status) && /cancel/i.test(current.refundReason || "")) {
+    if (order && ["pending", "confirmed"].includes(order.status) && /cancel/i.test(current.refundReason || "")) {
       try {
         const { restoreConsumedOrderStock } = require("./stock.service");
         await restoreConsumedOrderStock(order, { actorUser: order.user, reason: "Refunded cancellation reconciliation" });

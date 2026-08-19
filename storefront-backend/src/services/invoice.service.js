@@ -157,7 +157,7 @@ async function getOrCreateInvoice(orderId, userId) {
 
   const order = await Order.findOne({ _id: orderId, user: userId }).lean();
   if (!order) throw ApiError.notFound("Order not found.");
-  if (!["shipped", "out-for-delivery", "delivered", "returned", "refunded"].includes(order.status)) {
+  if (order.status !== "shipped") {
     throw ApiError.conflict("Invoice is available after the order is shipped.");
   }
 

@@ -36,25 +36,20 @@ const refund = asyncHandler(async (req, res) => {
   if (req.body.amount !== undefined && Number(req.body.amount) > Number(payment.amount)) throw ApiError.badRequest("Refund amount cannot exceed the original payment amount.");
   const order = await Order.findById(payment.order);
   if (!order) throw ApiError.notFound("Order not found.");
-  if (!["cancelled", "returned"].includes(order.status)) {
-    throw ApiError.conflict("Refund is only allowed for cancelled or returned orders.");
+  if (order.status !== "cancelled") {
+    throw ApiError.conflict("Refund is only allowed for cancelled orders.");
   }
 
   const updated = await initiateRefund(payment, {
     amount: req.body.amount,
-    reason: req.body.reason || (order.status === "returned" ? "Returned order" : "Cancelled order"),
+    reason: req.body.reason || "Cancelled order",
     actorId: req.admin?._id || null,
   });
 
   const fullyRefunded = Number(updated.refundedAmount || 0) >= Number(updated.amount || 0);
-  if (fullyRefunded && order.status === "returned") {
-    try { await transitionOrder(order, "refunded", { actorType: "admin", actorId: req.admin?._id || null, note: "Refund initiated with Razorpay" }); } catch (_) {}
-  }
-  if (fullyRefunded && order.status === "cancelled") {
+  if (fullyRefunded) {
     updated.refundReason = updated.refundReason || "Cancelled order";
     await updated.save();
-  }
-  if (fullyRefunded) {
     await rollbackConsumedCoupon(order._id, "Order fully refunded");
     await restoreConsumedOrderStock(order, { actorUser: req.admin?._id || null, reason: "Order fully refunded" });
   }
@@ -85,7 +80,7 @@ const reconcile = asyncHandler(async (req, res) => {
   }
   if (payment.status === "refunded") {
     const currentOrder = await Order.findById(payment.order);
-    if (currentOrder && ["pending", "confirmed", "packed"].includes(currentOrder.status) && /cancel/i.test(payment.refundReason || "")) {
+    if (currentOrder && ["pending", "confirmed"].includes(currentOrder.status) && /cancel/i.test(payment.refundReason || "")) {
       await restoreConsumedOrderStock(currentOrder, { actorUser: req.admin?._id || null, reason: "Refunded cancellation reconciliation" });
       if (currentOrder.couponReservationId) await rollbackConsumedCoupon(currentOrder._id, "Refunded cancellation reconciliation");
       try { await transitionOrder(currentOrder, "cancelled", { actorType: "admin", actorId: req.admin?._id || null, note: payment.refundReason }); } catch (_) {}

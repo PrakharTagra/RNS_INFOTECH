@@ -47,13 +47,18 @@ async function getDashboardSummary(req, res) {
     Number(settings?.commerce?.lowStockThreshold ?? DEFAULT_LOW_STOCK_THRESHOLD)
   );
 
+  // "Successful order" = payment verified AND not cancelled. Every metric
+  // below that represents sales/growth must use this filter — the orders
+  // list (admin-portal Orders page) is where pending/unverified/cancelled
+  // orders are still visible; the dashboard only reflects real revenue.
+  const successfulOrderFilter = { paymentVerifiedAt: { $ne: null }, status: { $ne: "cancelled" } };
   const revenueFilter = {
+    ...successfulOrderFilter,
     createdAt: { $gte: currentStart, $lt: now },
-    status: { $nin: ["cancelled", "refunded", "returned"] },
   };
   const previousRevenueFilter = {
+    ...successfulOrderFilter,
     createdAt: { $gte: previousStart, $lt: currentStart },
-    status: { $nin: ["cancelled", "refunded", "returned"] },
   };
 
   const [
@@ -73,10 +78,13 @@ async function getDashboardSummary(req, res) {
   ] = await Promise.all([
     Order.aggregate([{ $match: revenueFilter }, { $group: { _id: null, total: { $sum: "$itemsTotal" } } }]),
     Order.aggregate([{ $match: previousRevenueFilter }, { $group: { _id: null, total: { $sum: "$itemsTotal" } } }]),
-    Order.countDocuments({ createdAt: { $gte: currentStart, $lt: now } }),
-    Order.countDocuments({ createdAt: { $gte: previousStart, $lt: currentStart } }),
-    Order.countDocuments({ status: "pending" }),
-    Order.countDocuments({ status: "pending", createdAt: { $gte: previousStart, $lt: currentStart } }),
+    Order.countDocuments({ ...successfulOrderFilter, createdAt: { $gte: currentStart, $lt: now } }),
+    Order.countDocuments({ ...successfulOrderFilter, createdAt: { $gte: previousStart, $lt: currentStart } }),
+    // "Pending" here means the fulfillment backlog: paid, awaiting admin
+    // confirmation — not unpaid draft orders (those never got paymentVerifiedAt
+    // set and never appear anywhere in admin-backend's own reads).
+    Order.countDocuments({ status: "pending", paymentVerifiedAt: { $ne: null } }),
+    Order.countDocuments({ status: "pending", paymentVerifiedAt: { $ne: null }, createdAt: { $gte: previousStart, $lt: currentStart } }),
     User.countDocuments(),
     User.countDocuments({ createdAt: { $gte: currentStart, $lt: now } }),
     User.countDocuments({ createdAt: { $gte: previousStart, $lt: currentStart } }),
@@ -85,7 +93,7 @@ async function getDashboardSummary(req, res) {
       .sort({ stock: 1, name: 1 })
       .limit(5)
       .lean(),
-    Order.find({})
+    Order.find(successfulOrderFilter)
       .sort({ createdAt: -1 })
       .select("_id user itemsTotal status createdAt")
       .populate("user", "name email")
@@ -99,8 +107,8 @@ async function getDashboardSummary(req, res) {
     Order.aggregate([
       {
         $match: {
+          ...successfulOrderFilter,
           createdAt: { $gte: weekStart, $lt: new Date(now.getTime() + DAY_MS) },
-          status: { $nin: ["cancelled", "refunded", "returned"] },
         },
       },
       {
