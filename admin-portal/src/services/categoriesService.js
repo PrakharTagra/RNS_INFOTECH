@@ -1,4 +1,4 @@
-import { adminApiRequest } from "../lib/adminApi";
+import { adminApiRequest, adminApiUpload } from "../lib/adminApi";
 import { getProducts } from "./productsService";
 
 function normalizeCategory(category = {}) {
@@ -60,6 +60,18 @@ export async function updateCategory(id, data) {
     },
   });
   return normalizeCategory(response?.category);
+}
+
+// Categories only ever have one image, stored as a Cloudinary
+// {url, publicId} pair (see admin-backend Category model) — unlike
+// products there's no plain "image URL" field on the record, so this
+// always goes through the multipart upload endpoint, never the JSON
+// PATCH body.
+export async function uploadCategoryImage(id, file, { onProgress } = {}) {
+  const formData = new FormData();
+  formData.append("image", file, file.name);
+  const payload = await adminApiUpload(`/categories/${id}/image`, formData, { onProgress });
+  return payload?.category ? normalizeCategory(payload.category) : null;
 }
 
 export async function deleteCategory(id) {

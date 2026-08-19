@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Icon from "../../components/Icon";
 import FormField from "../../components/FormField";
-import { createCategory, updateCategory } from "../../services/categoriesService";
+import { createCategory, updateCategory, uploadCategoryImage } from "../../services/categoriesService";
 
 const ICONS = ["display", "tablet", "pen", "layers", "package", "tag", "gear", "star"];
 
@@ -10,14 +10,26 @@ export default function CategoryFormModal({ category, onClose, onSaved }) {
   const [form, setForm] = useState({
     name: category?.name || "",
     icon: category?.icon || "tag",
-    image: category?.image || "",
     status: category?.status || "active",
   });
+  // Image is handled separately from the rest of the form: the backend
+  // only accepts it via a multipart upload to /categories/:id/image
+  // (it's stored as a Cloudinary {url, publicId} pair, not a plain
+  // string field), so it can't ride along in the JSON create/update body.
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(category?.image || "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  function handleImagePick(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   }
 
   async function handleSubmit(e) {
@@ -29,13 +41,19 @@ export default function CategoryFormModal({ category, onClose, onSaved }) {
     }
     setSaving(true);
     try {
+      let saved;
       if (isEdit) {
-        const updated = await updateCategory(category.id, form);
-        onSaved(updated, "Category updated");
+        saved = await updateCategory(category.id, form);
       } else {
-        const created = await createCategory(form);
-        onSaved(created, "Category created");
+        saved = await createCategory(form);
       }
+      // A brand-new category doesn't have an id until create() returns,
+      // so the image upload always has to happen after (never before)
+      // the create/update call above.
+      if (imageFile && saved?.id) {
+        saved = await uploadCategoryImage(saved.id, imageFile);
+      }
+      onSaved(saved, isEdit ? "Category updated" : "Category created");
     } catch (err) {
       setError(err.message || "Something went wrong.");
       setSaving(false);
@@ -69,8 +87,17 @@ export default function CategoryFormModal({ category, onClose, onSaved }) {
               </select>
             </FormField>
 
-            <FormField label="Image URL" htmlFor="cat-image" hint="Path under /assets, or any image URL.">
-              <input id="cat-image" className="admin-input" value={form.image} onChange={(e) => set("image", e.target.value)} placeholder="/assets/categories/example.jpg" />
+            <FormField label="Image" htmlFor="cat-image" hint="JPG or PNG, uploaded to storage.">
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt=""
+                    style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: "1px solid var(--admin-border)" }}
+                  />
+                )}
+                <input id="cat-image" type="file" accept="image/*" className="admin-input" onChange={handleImagePick} />
+              </div>
             </FormField>
 
             <FormField label="Visibility" htmlFor="cat-status">

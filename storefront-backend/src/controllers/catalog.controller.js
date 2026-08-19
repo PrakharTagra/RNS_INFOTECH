@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const ApiError = require("../utils/ApiError");
@@ -73,8 +74,13 @@ const listProducts = asyncHandler(async (req, res) => {
 });
 
 // GET /api/products/:slug — public detail
+// Accepts either the human-readable slug or a Mongo ObjectId in the same
+// param: several frontend call sites (cart, orders, compare) only ever
+// carry the product's _id, not its slug, so both need to resolve here.
 const getProductBySlug = asyncHandler(async (req, res) => {
-  const product = await Product.findOne({ slug: req.params.slug, isActive: true }).populate("category", "name slug").lean();
+  const { slug } = req.params;
+  const lookup = mongoose.Types.ObjectId.isValid(slug) ? { _id: slug } : { slug };
+  const product = await Product.findOne({ ...lookup, isActive: true }).populate("category", "name slug").lean();
   if (!product) throw ApiError.notFound("Product not found.");
   res.json({ product: withDiscountPercent(product) });
 });
