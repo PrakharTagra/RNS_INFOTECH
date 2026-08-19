@@ -174,6 +174,33 @@ export default function ProductDetailPage() {
     }
   }
 
+  // These three used to sit after the early-return states below, which
+  // violates the Rules of Hooks: while `loading` is true (or `product`
+  // is null on a 404), those returns fire before React ever reaches
+  // these useMemo calls, so a render with data has three more hooks
+  // than a render without it — React error #310 ("rendered more hooks
+  // than during the previous render"). Hooks now run unconditionally on
+  // every render, using product?.categoryId since `product` (and the
+  // destructured `categoryId`) may still be null/undefined here.
+  const related = useMemo(
+    () => relatedProducts.filter((p) => p.categoryId === product?.categoryId && p.id !== id).slice(0, 4),
+    [product?.categoryId, id, relatedProducts]
+  );
+
+  const productDownloads = useMemo(
+    () => downloads.filter((d) => d.categoryId === product?.categoryId || d.categoryId === "universal"),
+    [product?.categoryId]
+  );
+
+  const ratingBreakdown = useMemo(() => {
+    const counts = [5, 4, 3, 2, 1].map((star) => ({
+      star,
+      count: liveReviews.filter((r) => r.rating === star).length,
+    }));
+    const max = Math.max(1, ...counts.map((c) => c.count));
+    return counts.map((c) => ({ ...c, pct: Math.round((c.count / max) * 100) }));
+  }, [liveReviews]);
+
   if (!loading && !product) {
     if (loadError && loadError.status !== 404) {
       return (<><SEO title="Unable to load product" noindex /><AnnouncementBar {...announcement} /><Navbar {...nav} /><section className="rns-section"><div className="rns-container" style={{ padding: "60px 0" }}><ErrorState message={loadError.message} /></div></section><Footer logo={nav.logo} {...footer} /></>);
@@ -235,25 +262,6 @@ export default function ProductDetailPage() {
 
   const discount = mrp && mrp > price ? Math.round(((mrp - price) / mrp) * 100) : null;
   const comparing = isComparing(id);
-
-  const related = useMemo(
-    () => relatedProducts.filter((p) => p.categoryId === categoryId && p.id !== id).slice(0, 4),
-    [categoryId, id, relatedProducts]
-  );
-
-  const productDownloads = useMemo(
-    () => downloads.filter((d) => d.categoryId === categoryId || d.categoryId === "universal"),
-    [categoryId]
-  );
-
-  const ratingBreakdown = useMemo(() => {
-    const counts = [5, 4, 3, 2, 1].map((star) => ({
-      star,
-      count: liveReviews.filter((r) => r.rating === star).length,
-    }));
-    const max = Math.max(1, ...counts.map((c) => c.count));
-    return counts.map((c) => ({ ...c, pct: Math.round((c.count / max) * 100) }));
-  }, [liveReviews]);
 
   const breadcrumbItems = [
     { label: category, href: `/products?category=${categoryId}` },

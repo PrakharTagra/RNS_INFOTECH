@@ -8,9 +8,11 @@ const { createReviewSchema, listReviewsQuerySchema } = require("../validators/re
 
 const router = Router();
 
-router.use(requireAuth);
-
-router.post("/:productId/reviews", validateParam("productId"), validate(createReviewSchema), reviewController.create);
+// Only submitting a review requires a signed-in shopper — listing
+// reviews is public (any visitor viewing a product page should see
+// them), so requireAuth is scoped to the POST route only, not the
+// whole router.
+router.post("/:productId/reviews", requireAuth, validateParam("productId"), validate(createReviewSchema), reviewController.create);
 router.get("/:productId/reviews", validateParam("productId"), validate(listReviewsQuerySchema, "query"), reviewController.listByProduct);
 
 module.exports = router;
