@@ -64,10 +64,15 @@ export function OrdersProvider({ children }) {
   const { currentUser, isAuthenticated } = useAuth();
   const [orders, setOrders] = useState([]);
   const [ordersError, setOrdersError] = useState(null);
+  // Holds the single reservation order created by placeOrder() below,
+  // between "order created" and "payment verified". Deliberately kept
+  // OUT of `orders` — see placeOrder()'s comment for why.
+  const [pendingOrder, setPendingOrder] = useState(null);
 
   const fetchOrders = async () => {
     if (!isAuthenticated) {
       setOrders([]);
+      setPendingOrder(null);
       return;
     }
 
@@ -76,6 +81,10 @@ export function OrdersProvider({ children }) {
       const response = await apiRequest("/orders?page=1&limit=50", { authRequired: true });
       const items = (response.items || []).map((order) => normalizeOrder(order));
       setOrders(items);
+      // Once the reservation order shows up in the real, payment-verified
+      // list, it's no longer "pending" from the client's perspective —
+      // drop the fallback so getOrder() reads the authoritative record.
+      setPendingOrder((prev) => (prev && items.some((o) => o.id === prev.id) ? null : prev));
     } catch (error) {
       setOrdersError(error);
     }
@@ -89,7 +98,7 @@ export function OrdersProvider({ children }) {
   const api = useMemo(() => ({
     orders,
     ordersError,
-    getOrder: (id) => orders.find((order) => order.id === id) || null,
+    getOrder: (id) => orders.find((order) => order.id === id) || (pendingOrder?.id === id ? pendingOrder : null),
     refreshOrders: fetchOrders,
     placeOrder: async ({ items, shippingAddress, paymentMethod, total, couponCode }) => {
       const payload = {
@@ -120,8 +129,20 @@ export function OrdersProvider({ children }) {
         authRequired: true,
       });
 
+      // This order isn't payment-verified yet, so the real GET /orders
+      // deliberately won't return it (see storefront-backend's
+      // listMyOrders — an unpaid order must never be shown as placed).
+      // It used to be added straight into `orders` here, which meant the
+      // "Your orders" page immediately showed it labeled "Order placed"
+      // before any payment happened — e.g. if the customer hit the
+      // browser Back button from the payment screen instead of paying,
+      // they'd land back on a page where the unpaid order already looked
+      // placed. Track it separately instead: PaymentPage can still find
+      // it by id via getOrder(), but it stays invisible to "Your orders"
+      // until fetchOrders() confirms the backend actually has it (i.e.
+      // payment was verified).
       const order = normalizeOrder(response.order);
-      setOrders((prev) => [order, ...prev.filter((item) => item.id !== order.id)]);
+      setPendingOrder(order);
       return order;
     },
     getOrderById: async (id) => {
@@ -139,7 +160,7 @@ export function OrdersProvider({ children }) {
     // states it depended on (see PROGRESS_ORDER_SIMPLIFICATION.md).
     // Admin's job ends at "shipped"; there's no post-shipment state to
     // request a return from anymore.
-  }), [orders, currentUser, isAuthenticated]);
+  }), [orders, pendingOrder, currentUser, isAuthenticated]);
 
   return <OrdersContext.Provider value={api}>{children}</OrdersContext.Provider>;
 }
