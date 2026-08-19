@@ -15,7 +15,7 @@ import Footer from "./components/Footer";
 import SEO from "./components/SEO";
 import Reveal from "./components/ui/Reveal";
 import { Trace } from "./components/SectionHeader";
-import { apiRequest, normalizeProduct } from "./lib/api";
+import { apiRequest, getHomepageProducts } from "./lib/api";
 import { getFaqContent } from "./lib/contentApi";
 
 import {
@@ -36,7 +36,12 @@ const ORGANIZATION_JSON_LD = {
 
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
+  // Four independent, pre-filtered rails from GET /homepage-products —
+  // replaces the old single `products` array that got the same 8
+  // products reused (and re-filtered by a since-removed single `tag`
+  // field) across all three sections. See HOMEPAGE_CURATION_PROGRESS.md
+  // for the root-cause writeup.
+  const [homepageProducts, setHomepageProducts] = useState({ featured: [], bestSellers: [], newArrivals: [], discounted: [] });
   const [website, setWebsite] = useState({ hero: null, promo: null, whyChooseUs: [], solutions: [], testimonials: [] });
   const [faqs, setFaqs] = useState([]);
 
@@ -45,14 +50,14 @@ export default function HomePage() {
 
     async function load() {
       const [catalogResult, websiteResult] = await Promise.allSettled([
-        Promise.all([apiRequest("/categories"), apiRequest("/products?page=1&limit=8&featured=true")]),
+        Promise.all([apiRequest("/categories"), getHomepageProducts()]),
         Promise.all([apiRequest("/website"), getFaqContent()]),
       ]);
 
       if (ignore) return;
 
       if (catalogResult.status === "fulfilled") {
-        const [categoriesRes, productsRes] = catalogResult.value;
+        const [categoriesRes, homepageProductsRes] = catalogResult.value;
         const nextCategories = (categoriesRes?.items || []).map((category) => ({
           id: category.slug || category._id,
           name: category.name,
@@ -60,7 +65,7 @@ export default function HomePage() {
           icon: "layers",
         }));
         setCategories(nextCategories);
-        setProducts((productsRes?.items || []).map(normalizeProduct));
+        setHomepageProducts(homepageProductsRes);
       }
 
       if (websiteResult.status === "fulfilled") {
@@ -94,8 +99,7 @@ export default function HomePage() {
         eyebrow="Catalogue"
         title="Featured products"
         subtitle="A cross-section of what businesses order most this quarter."
-        products={products}
-        filterTag="featured"
+        products={homepageProducts.featured}
         altBg
         action={{ label: "View full catalogue", href: "/products" }}
       />
@@ -116,8 +120,7 @@ export default function HomePage() {
         eyebrow="Just in"
         title="New arrivals"
         subtitle="Recently added to the catalogue — first stock windows move fastest."
-        products={products}
-        filterTag="new"
+        products={homepageProducts.newArrivals}
         action={{ label: "View all new arrivals", href: "/products?tag=new" }}
       />
 
@@ -126,10 +129,18 @@ export default function HomePage() {
         eyebrow="Most ordered"
         title="Best sellers"
         subtitle="What creators and studios keep reordering."
-        products={products}
-        filterTag="best-seller"
+        products={homepageProducts.bestSellers}
         altBg
         action={{ label: "View all best sellers", href: "/products?tag=best-seller" }}
+      />
+
+      <ProductGrid
+        id="deals"
+        eyebrow="Limited time"
+        title="On sale"
+        subtitle="The steepest discounts in the catalogue right now, biggest cut first."
+        products={homepageProducts.discounted}
+        action={{ label: "View all deals", href: "/products?tag=discounted" }}
       />
 
       <Testimonials items={website.testimonials} />

@@ -79,4 +79,89 @@ const getProductBySlug = asyncHandler(async (req, res) => {
   res.json({ product: withDiscountPercent(product) });
 });
 
-module.exports = { listCategories, getCategoryBySlug, listProducts, getProductBySlug };
+// Cap on each homepage rail. Kept small and fixed (no query param) since
+// this endpoint's whole point is "one request, four ready-made lists" for
+// the storefront homepage — not a general-purpose paginated feed.
+const HOMEPAGE_RAIL_LIMIT = 8;
+
+// GET /api/homepage-products — public, single-call homepage data source.
+// Replaces the old flow (frontend fetching one featured=true page of
+// /api/products and re-slicing that same array three ways client-side —
+// see HomePage.jsx Phase 5 for the consuming change). Every rail is
+// isActive: true only.
+//   - featured / bestSellers: admin-curated (isFeatured/isBestSeller flags
+//     set in admin-backend), ordered by the matching homepage*Order field.
+//   - newArrivals: fully automatic, newest createdAt first.
+//   - discounted: fully automatic, computed from mrp vs price (no stored
+//     flag), via aggregation since sorting needs the computed value.
+//     Sorted by discount PERCENT rather than raw ₹ amount — a ₹200-off
+//     ₹500 item outranks a ₹200-off ₹20,000 item, which reads as a better
+//     "deal" to a browsing customer. (Design call — flag if raw amount is
+//     preferred instead.)
+const getHomepageProducts = asyncHandler(async (req, res) => {
+  const [featured, bestSellers, newArrivals, discounted] = await Promise.all([
+    Product.find({ isActive: true, isFeatured: true })
+      .populate("category", "name slug")
+      .sort({ homepageFeaturedOrder: 1 })
+      .limit(HOMEPAGE_RAIL_LIMIT)
+      .lean(),
+    Product.find({ isActive: true, isBestSeller: true })
+      .populate("category", "name slug")
+      .sort({ homepageBestSellerOrder: 1 })
+      .limit(HOMEPAGE_RAIL_LIMIT)
+      .lean(),
+    Product.find({ isActive: true })
+      .populate("category", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(HOMEPAGE_RAIL_LIMIT)
+      .lean(),
+    Product.aggregate([
+      { $match: { isActive: true, $expr: { $gt: ["$mrp", "$price"] } } },
+      {
+        $addFields: {
+          discountPercent: {
+            $round: [{ $multiply: [{ $divide: [{ $subtract: ["$mrp", "$price"] }, "$mrp"] }, 100] }, 0],
+          },
+        },
+      },
+      { $sort: { discountPercent: -1 } },
+      { $limit: HOMEPAGE_RAIL_LIMIT },
+      { $lookup: { from: "categories", localField: "category", foreignField: "_id", as: "category" } },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          name: 1,
+          slug: 1,
+          sku: 1,
+          brand: 1,
+          productType: 1,
+          shortDescription: 1,
+          images: 1,
+          price: 1,
+          mrp: 1,
+          stock: 1,
+          rating: 1,
+          reviewCount: 1,
+          isFeatured: 1,
+          isBestSeller: 1,
+          discountPercent: 1,
+          createdAt: 1,
+          "category._id": 1,
+          "category.name": 1,
+          "category.slug": 1,
+        },
+      },
+    ]),
+  ]);
+
+  res.json({
+    featured: featured.map(withDiscountPercent),
+    bestSellers: bestSellers.map(withDiscountPercent),
+    newArrivals: newArrivals.map(withDiscountPercent),
+    // Already carries a computed discountPercent from the pipeline —
+    // withDiscountPercent would just recompute the same number, so skip it.
+    discounted,
+  });
+});
+
+module.exports = { listCategories, getCategoryBySlug, listProducts, getProductBySlug, getHomepageProducts };

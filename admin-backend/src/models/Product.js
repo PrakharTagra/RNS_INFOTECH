@@ -45,7 +45,19 @@ const productSchema = new mongoose.Schema(
     rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
+    // Homepage curation (Phase H1). isFeatured/isBestSeller are the
+    // admin's manual picks for the two curated homepage rails; the other
+    // two rails (New Arrivals, Discounted) are computed automatically
+    // from createdAt / price vs mrp and need no flag here. The paired
+    // *Order fields let admin control display order within each rail —
+    // null means "not curated for that rail" (kept out of the query
+    // filter with $ne: null rather than doing an isFeatured boolean AND
+    // an order sort, so a product can be unmarked without a second
+    // write). Lower number = shown first.
     isFeatured: { type: Boolean, default: false },
+    homepageFeaturedOrder: { type: Number, default: null, min: 0 },
+    isBestSeller: { type: Boolean, default: false },
+    homepageBestSellerOrder: { type: Number, default: null, min: 0 },
   },
   {
     timestamps: true,
@@ -79,5 +91,10 @@ productSchema.index({ name: "text", description: "text", tags: "text" });
 productSchema.index({ isActive: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, isFeatured: 1 });
 productSchema.index({ isActive: 1, stock: 1 });
+// Backs the storefront homepage endpoint's curated-rail queries (Phase
+// H1): fetch isActive + isFeatured/isBestSeller docs pre-sorted by the
+// admin's chosen order without an in-memory sort.
+productSchema.index({ isActive: 1, isFeatured: 1, homepageFeaturedOrder: 1 });
+productSchema.index({ isActive: 1, isBestSeller: 1, homepageBestSellerOrder: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

@@ -5,9 +5,10 @@ import Icon from "../../components/Icon";
 import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import StatusToggle from "../../components/StatusToggle";
 import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
-import { getProductsPage, deleteProduct, bulkProductAction } from "../../services/productsService";
+import { getProductsPage, deleteProduct, bulkProductAction, updateProductCuration } from "../../services/productsService";
 import { getCategories } from "../../services/categoriesService";
 import { getBrands } from "../../services/brandsService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
@@ -34,6 +35,7 @@ export default function ProductsListPage() {
   const [bulkAction, setBulkAction] = useState("");
   const [bulkCategory, setBulkCategory] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [curationBusyId, setCurationBusyId] = useState("");
 
   async function load(targetPage = page) {
     setLoading(true);
@@ -78,6 +80,22 @@ export default function ProductsListPage() {
     finally { setBulkBusy(false); }
   }
 
+  // Quick-toggle affordance: flip Featured/Best-Seller straight from the
+  // list without opening the full edit form. Sends only the changed flag
+  // (order auto-assigns) via updateProductCuration, then patches just
+  // that row in place so filters/pagination/scroll position don't reset.
+  async function toggleCuration(product, field) {
+    setCurationBusyId(product.id);
+    try {
+      const updated = await updateProductCuration(product.id, { [field]: !product[field] });
+      if (updated) setProducts((current) => current.map((p) => (p.id === product.id ? updated : p)));
+    } catch (err) {
+      showToast(err.message || "Unable to update product.", "error");
+    } finally {
+      setCurationBusyId("");
+    }
+  }
+
   const hasFilters = q || categoryId || brand || status || sort || stock;
   const allSelected = products.length > 0 && selected.length === products.length;
   const first = pagination.total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -108,13 +126,15 @@ export default function ProductsListPage() {
 
         {loading ? <div style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>Loading products…</div> : products.length === 0 ? <EmptyState icon="package" title="No products found" description="Try adjusting your filters, or add a new product." /> : <>
           <div className="admin-table-wrap"><table className="admin-table"><thead><tr>
-            <th style={{ width: 42 }}><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all products on this page" /></th><th>Product</th><th>Category</th><th>Brand</th><th>Price</th><th>Stock</th><th>Status</th><th style={{ textAlign: "right" }}>Actions</th>
+            <th style={{ width: 42 }}><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all products on this page" /></th><th>Product</th><th>Category</th><th>Brand</th><th>Price</th><th>Stock</th><th>Status</th><th>Featured</th><th>Best Seller</th><th style={{ textAlign: "right" }}>Actions</th>
           </tr></thead><tbody>{products.map((p) => <tr key={p.id}>
             <td><input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggleSelected(p.id)} aria-label={`Select ${p.name}`} /></td>
             <td><div className="admin-table__title-cell"><img className="admin-table__thumb" src={p.image} alt="" /><div><Link to={`/products/${p.id}`} className="admin-table__title-main" style={{ textDecoration: "none" }}>{p.name}</Link><div className="admin-table__title-sub">{p.sku}</div></div></div></td>
             <td>{p.category}</td><td>{p.brand}</td><td>₹{p.price.toLocaleString("en-IN")}{p.mrp > p.price && <span className="admin-table__mrp">₹{p.mrp.toLocaleString("en-IN")}</span>}</td>
             <td><Badge tone={STATUS_TONE[p.stock]}>{statusLabel(p.stock)}</Badge><span style={{ marginLeft: 8, fontSize: 11.5, color: "var(--admin-ink-faint)" }}>{p.stockQty} units</span></td>
             <td><Badge tone={p.status === "active" ? "success" : "neutral"}>{statusLabel(p.status)}</Badge></td>
+            <td><StatusToggle active={p.isFeatured} disabled={curationBusyId === p.id} onChange={() => toggleCuration(p, "isFeatured")} labels={{ on: "Yes", off: "No" }} /></td>
+            <td><StatusToggle active={p.isBestSeller} disabled={curationBusyId === p.id} onChange={() => toggleCuration(p, "isBestSeller")} labels={{ on: "Yes", off: "No" }} /></td>
             <td><div className="admin-table__actions"><Link to={`/products/${p.id}`} className="admin-icon-btn" aria-label="View"><Icon name="arrowRight" size={14} /></Link><Link to={`/products/${p.id}/edit`} className="admin-icon-btn" aria-label="Edit"><Icon name="edit" size={14} /></Link><button className="admin-icon-btn admin-icon-btn--danger" type="button" aria-label="Delete" onClick={() => setPendingDelete(p)}><Icon name="trash" size={14} /></button></div></td>
           </tr>)}</tbody></table></div>
           <div className="admin-pagination"><span>Showing {first}–{last} of {pagination.total}</span><div className="admin-pagination__controls"><button className="admin-btn admin-btn--ghost admin-btn--sm" disabled={page <= 1 || loading} onClick={() => setPage((p) => p - 1)} type="button">Previous</button><span style={{ fontSize: 12 }}>Page {page} of {Math.max(1, pagination.totalPages)}</span><button className="admin-btn admin-btn--ghost admin-btn--sm" disabled={page >= pagination.totalPages || loading} onClick={() => setPage((p) => p + 1)} type="button">Next</button></div></div>

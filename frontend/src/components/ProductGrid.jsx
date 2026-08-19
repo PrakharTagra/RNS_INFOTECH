@@ -5,11 +5,16 @@ import Reveal from "./ui/Reveal";
 import { EmptyState } from "./ui/Stateviews";
 
 /**
- * ProductGrid — one section component reused for Featured Products,
- * New Arrivals, and Best Sellers. Pass a `filterTag` to select which
- * slice of the product list to show, or omit it to show all. Renders
- * an EmptyState instead of a blank grid if the tag matches nothing,
- * so a bad/renamed tag fails visibly instead of silently.
+ * ProductGrid — one section component reused for Featured Products, New
+ * Arrivals, Best Sellers, and related-product rails. On the homepage,
+ * each rail is passed its own pre-filtered array straight from
+ * GET /homepage-products (no filterTag needed — the array is already
+ * the right slice). Pass `filterTag` only when handing this component a
+ * single flat product list it needs to slice itself (e.g. elsewhere in
+ * the app). "featured"/"best-seller" match the curated boolean flags;
+ * anything else matches against the product's freeform `tags[]`. Renders
+ * an EmptyState instead of a blank grid if nothing matches, so a bad
+ * filter fails visibly instead of silently.
  */
 export default function ProductGrid({
   id,
@@ -24,7 +29,11 @@ export default function ProductGrid({
 }) {
   let list = Array.isArray(products) ? [...products] : [];
   if (filterTag) {
-    list = list.filter((p) => p.tag === filterTag || (filterTag === "featured" && p.isFeatured));
+    list = list.filter((p) => {
+      if (filterTag === "featured") return Boolean(p.isFeatured);
+      if (filterTag === "best-seller") return Boolean(p.isBestSeller);
+      return Array.isArray(p.tags) && p.tags.includes(filterTag);
+    });
   }
   if (limit) list = list.slice(0, limit);
 

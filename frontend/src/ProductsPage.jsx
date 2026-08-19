@@ -209,10 +209,20 @@ export default function ProductsPage() {
     }
 
     if (status !== "all") {
+      // "featured"/"best-seller" are curated booleans (Phase 4), not
+      // tags — matching them against `tags[]` would silently show
+      // nothing once admin stopped setting a "featured"/"best-seller"
+      // tag value. "new" has no persisted flag (New Arrivals is
+      // automatic, sorted by createdAt — see homepage-products), so it
+      // stays a freeform tags[] match same as any other filter chip.
       list =
         status === "discounted"
           ? list.filter((p) => p.mrp && p.mrp > p.price)
-          : list.filter((p) => p.tag === status);
+          : status === "featured"
+            ? list.filter((p) => p.isFeatured)
+            : status === "best-seller"
+              ? list.filter((p) => p.isBestSeller)
+              : list.filter((p) => Array.isArray(p.tags) && p.tags.includes(status));
     }
 
     if (selectedAvailability.length > 0) {

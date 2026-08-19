@@ -74,10 +74,12 @@ export default function ProductDetailPage() {
             <p style={{ marginBottom: 8 }}>
               {product.sku} · {product.category} · {product.brand}
             </p>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Badge tone={product.status === "active" ? "success" : "neutral"}>{statusLabel(product.status)}</Badge>
               <Badge tone={STATUS_TONE[product.stock]}>{statusLabel(product.stock)}</Badge>
-              {product.tag && product.tag !== "none" && <Badge tone="info">{statusLabel(product.tag)}</Badge>}
+              {product.isFeatured && <Badge tone="info">Featured{product.homepageFeaturedOrder != null ? ` #${product.homepageFeaturedOrder}` : ""}</Badge>}
+              {product.isBestSeller && <Badge tone="info">Best Seller{product.homepageBestSellerOrder != null ? ` #${product.homepageBestSellerOrder}` : ""}</Badge>}
+              {(product.tags || []).map((t) => <Badge key={t} tone="neutral">{t}</Badge>)}
             </div>
           </div>
         </div>

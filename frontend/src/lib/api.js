@@ -299,6 +299,12 @@ export function normalizeProduct(product = {}) {
           value: String(value ?? ""),
         }))
       : [];
+  // tags[] is freeform (search/filtering elsewhere on the storefront) and
+  // fully decoupled from homepage curation — Featured/Best Seller are
+  // their own booleans below, not tag values. Kept as a full array
+  // rather than truncating to the first entry so ProductGrid/ProductCard
+  // can match against any of a product's tags, not just tags[0].
+  const tags = Array.isArray(product.tags) ? product.tags : product.tag ? [product.tag] : [];
 
   return {
     id: product._id || product.id || product.slug,
@@ -310,6 +316,7 @@ export function normalizeProduct(product = {}) {
     sku: product.sku || "",
     price: Number(product.price || 0),
     mrp: Number(product.mrp || product.price || 0),
+    discountPercent: Number(product.discountPercent || 0),
     stock: Number(product.stock || 0) > 0 ? "in-stock" : "out-of-stock",
     image: firstImage,
     images: productImages.length ? productImages.map((img) => (typeof img === "string" ? img : img.url || "")).filter(Boolean) : firstImage ? [firstImage] : [],
@@ -320,8 +327,31 @@ export function normalizeProduct(product = {}) {
     rating: Number(product.rating || 0),
     reviewCount: Number(product.reviewCount || 0),
     reviews: product.reviews || [],
-    tag: product.tags?.[0] || product.tag || (product.isFeatured ? "featured" : ""),
+    tags,
+    // `tag` (singular, first tag) kept read-only for any caller that
+    // hasn't moved to the `tags` array yet.
+    tag: tags[0] || "",
     isFeatured: Boolean(product.isFeatured),
+    isBestSeller: Boolean(product.isBestSeller),
     stockCount: Number(product.stock || 0),
+  };
+}
+
+/**
+ * getHomepageProducts — GET /homepage-products, the single call HomePage
+ * needs for all four curated/automatic rails. Returns already-normalized
+ * arrays so callers never touch the raw API shape:
+ *   { featured, bestSellers, newArrivals, discounted }
+ * Each rail comes back pre-filtered and pre-sorted by the backend (see
+ * storefront-backend/src/controllers/catalog.controller.js) — callers
+ * should render each array as-is rather than re-filtering it.
+ */
+export async function getHomepageProducts() {
+  const payload = await apiRequest("/homepage-products");
+  return {
+    featured: (payload?.featured || []).map(normalizeProduct),
+    bestSellers: (payload?.bestSellers || []).map(normalizeProduct),
+    newArrivals: (payload?.newArrivals || []).map(normalizeProduct),
+    discounted: (payload?.discounted || []).map(normalizeProduct),
   };
 }

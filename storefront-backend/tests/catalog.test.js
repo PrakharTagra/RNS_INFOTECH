@@ -109,6 +109,109 @@ describe("GET /api/products", () => {
   });
 });
 
+describe("GET /api/homepage-products", () => {
+  function mockFindChain(result) {
+    return {
+      populate: jest.fn().mockReturnThis(),
+      sort: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue(result),
+    };
+  }
+
+  it("is public — no Authorization header required", async () => {
+    Product.find.mockReturnValue(mockFindChain([]));
+    Product.aggregate.mockResolvedValue([]);
+
+    const res = await request(app).get("/api/homepage-products");
+
+    expect(res.status).toBe(200);
+  });
+
+  it("returns all four rails in one response", async () => {
+    Product.find.mockReturnValue(mockFindChain([]));
+    Product.aggregate.mockResolvedValue([]);
+
+    const res = await request(app).get("/api/homepage-products");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        featured: expect.any(Array),
+        bestSellers: expect.any(Array),
+        newArrivals: expect.any(Array),
+        discounted: expect.any(Array),
+      })
+    );
+  });
+
+  it("filters featured/bestSellers/newArrivals rails to isActive: true only", async () => {
+    Product.find.mockReturnValue(mockFindChain([]));
+    Product.aggregate.mockResolvedValue([]);
+
+    await request(app).get("/api/homepage-products");
+
+    const calledFilters = Product.find.mock.calls.map(([filter]) => filter);
+    calledFilters.forEach((filter) => expect(filter).toEqual(expect.objectContaining({ isActive: true })));
+    expect(calledFilters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ isFeatured: true }),
+        expect.objectContaining({ isBestSeller: true }),
+      ])
+    );
+  });
+
+  it("sorts featured by homepageFeaturedOrder and bestSellers by homepageBestSellerOrder", async () => {
+    const featuredChain = mockFindChain([]);
+    const bestSellerChain = mockFindChain([]);
+    const newArrivalsChain = mockFindChain([]);
+    Product.find
+      .mockReturnValueOnce(featuredChain)
+      .mockReturnValueOnce(bestSellerChain)
+      .mockReturnValueOnce(newArrivalsChain);
+    Product.aggregate.mockResolvedValue([]);
+
+    await request(app).get("/api/homepage-products");
+
+    expect(featuredChain.sort).toHaveBeenCalledWith({ homepageFeaturedOrder: 1 });
+    expect(bestSellerChain.sort).toHaveBeenCalledWith({ homepageBestSellerOrder: 1 });
+    expect(newArrivalsChain.sort).toHaveBeenCalledWith({ createdAt: -1 });
+  });
+
+  it("caps every rail at 8 via limit()", async () => {
+    const chain = mockFindChain([]);
+    Product.find.mockReturnValue(chain);
+    Product.aggregate.mockResolvedValue([]);
+
+    await request(app).get("/api/homepage-products");
+
+    expect(chain.limit).toHaveBeenCalledWith(8);
+  });
+
+  it("computes the discounted rail via aggregation on mrp vs price, capped at 8", async () => {
+    Product.find.mockReturnValue(mockFindChain([]));
+    Product.aggregate.mockResolvedValue([{ _id: "p1", name: "Wave Pen Tablet", price: 4000, mrp: 5000, discountPercent: 20 }]);
+
+    const res = await request(app).get("/api/homepage-products");
+
+    expect(res.status).toBe(200);
+    expect(res.body.discounted).toEqual([expect.objectContaining({ discountPercent: 20 })]);
+    const pipeline = Product.aggregate.mock.calls[0][0];
+    expect(pipeline[0]).toEqual(expect.objectContaining({ $match: expect.objectContaining({ isActive: true }) }));
+    expect(pipeline.some((stage) => stage.$limit === 8)).toBe(true);
+  });
+
+  it("applies discountPercent to featured/bestSellers/newArrivals rails same as /api/products", async () => {
+    const featuredChain = mockFindChain([{ _id: "p1", price: 8000, mrp: 10000 }]);
+    Product.find.mockReturnValueOnce(featuredChain).mockReturnValue(mockFindChain([]));
+    Product.aggregate.mockResolvedValue([]);
+
+    const res = await request(app).get("/api/homepage-products");
+
+    expect(res.body.featured[0].discountPercent).toBe(20);
+  });
+});
+
 describe("GET /api/products/:slug", () => {
   it("returns 404 for an inactive or unknown product", async () => {
     Product.findOne.mockReturnValue({ populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });

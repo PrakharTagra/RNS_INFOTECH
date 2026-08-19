@@ -9,8 +9,11 @@ function formatINR(n) {
 }
 
 export default function ProductCard({ product }) {
-  const { id, name, category, price, mrp, stock, image } = product;
+  const { id, name, category, price, mrp, stock, image, tags = [], isFeatured, isBestSeller } = product;
   const discount = mrp && mrp > price ? Math.round(((mrp - price) / mrp) * 100) : null;
+  // Best Seller / Featured (curated booleans) take priority over a
+  // freeform tag when there's only room for one badge on the card.
+  const badgeLabel = isBestSeller ? "Best seller" : isFeatured ? "Featured" : tags[0] || null;
 
   const { isComparing, toggleCompare, isFull, compareCategoryId } = useCompare();
   const toast = useToast();
@@ -118,11 +121,15 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          {stock === "out-of-stock" && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          {stock === "out-of-stock" ? (
             <span className="rns-tag" style={{ color: "#b3261e", borderColor: "#f3c9c5", background: "#fdf0ef" }}>
               Out of stock
             </span>
+          ) : badgeLabel ? (
+            <span className="rns-tag">{badgeLabel}</span>
+          ) : (
+            <span />
           )}
           {discount && (
             <span style={{ fontSize: 12, color: "var(--rns-primary)", fontWeight: 500, marginLeft: "auto" }}>

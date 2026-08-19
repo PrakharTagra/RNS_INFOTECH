@@ -3,17 +3,22 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Icon from "../../components/Icon";
 import FormField from "../../components/FormField";
+import StatusToggle from "../../components/StatusToggle";
 import { getProduct, createProduct, updateProduct, uploadProductImages, replaceProductImage, deleteProductImage } from "../../services/productsService";
 import { getCategories } from "../../services/categoriesService";
 import { getBrands } from "../../services/brandsService";
 
-const TAGS = ["none", "featured", "new", "best-seller", "discounted"];
+// Suggestions only — tags[] is freeform (search/filtering elsewhere),
+// fully decoupled from homepage curation. Featured & Best Sellers are
+// their own admin-curated flags below, not tag values anymore.
+const TAG_SUGGESTIONS = ["new", "sale", "bundle", "limited", "trending"];
 const MAX_IMAGES = 12;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 const BLANK = {
-  name: "", categoryId: "", brand: "", sku: "", price: "", mrp: "", tag: "none", stockQty: "", status: "active",
+  name: "", categoryId: "", brand: "", sku: "", price: "", mrp: "", tags: [], stockQty: "", status: "active",
+  isFeatured: false, homepageFeaturedOrder: "", isBestSeller: false, homepageBestSellerOrder: "",
   shortDescription: "", description: "", highlights: [""], specs: [{ label: "", value: "" }], images: [],
 };
 
@@ -50,6 +55,7 @@ export default function ProductFormPage() {
   const [mediaError, setMediaError] = useState("");
   const [pendingFiles, setPendingFiles] = useState([]);
   const [localPreviews, setLocalPreviews] = useState([]);
+  const [tagInput, setTagInput] = useState("");
 
   useEffect(() => {
     async function init() {
@@ -58,7 +64,14 @@ export default function ProductFormPage() {
         setCategories(c); setBrands(b);
         if (isEdit) {
           const product = await getProduct(id);
-          if (product) setForm({ ...BLANK, ...product, price: String(product.price), mrp: String(product.mrp), stockQty: String(product.stockQty), images: product.images || [] });
+          if (product) setForm({
+            ...BLANK, ...product,
+            price: String(product.price), mrp: String(product.mrp), stockQty: String(product.stockQty),
+            tags: Array.isArray(product.tags) ? product.tags : [],
+            homepageFeaturedOrder: product.homepageFeaturedOrder == null ? "" : String(product.homepageFeaturedOrder),
+            homepageBestSellerOrder: product.homepageBestSellerOrder == null ? "" : String(product.homepageBestSellerOrder),
+            images: product.images || [],
+          });
           setLoading(false);
         } else if (c[0]) {
           setForm((f) => ({ ...f, categoryId: c[0].id, brand: b[0]?.name || "" }));
@@ -81,6 +94,18 @@ export default function ProductFormPage() {
   function setSpec(i, key, value) { setForm((f) => ({ ...f, specs: f.specs.map((s, idx) => (idx === i ? { ...s, [key]: value } : s)) })); }
   function addSpec() { setForm((f) => ({ ...f, specs: [...f.specs, { label: "", value: "" }] })); }
   function removeSpec(i) { setForm((f) => ({ ...f, specs: f.specs.filter((_, idx) => idx !== i) })); }
+
+  function addTag(raw) {
+    const value = (raw ?? tagInput).trim().toLowerCase();
+    setTagInput("");
+    if (!value || form.tags.includes(value)) return;
+    setForm((f) => ({ ...f, tags: [...f.tags, value] }));
+  }
+  function removeTag(value) { setForm((f) => ({ ...f, tags: f.tags.filter((t) => t !== value) })); }
+  function onTagInputKeyDown(e) {
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); }
+    else if (e.key === "Backspace" && !tagInput && form.tags.length) removeTag(form.tags[form.tags.length - 1]);
+  }
 
   async function addFiles(event) {
     const files = Array.from(event.target.files || []);
@@ -156,7 +181,9 @@ export default function ProductFormPage() {
     if (!form.name.trim() || !form.categoryId || !form.brand || !form.sku.trim() || form.price === "") { setError("Please fill in name, category, brand, SKU, and price."); return; }
     const payload = {
       name: form.name.trim(), categoryId: form.categoryId, brand: form.brand, sku: form.sku.trim(), price: Number(form.price) || 0,
-      mrp: Number(form.mrp) || Number(form.price) || 0, tag: form.tag, stockQty: Number(form.stockQty) || 0, status: form.status,
+      mrp: Number(form.mrp) || Number(form.price) || 0, tags: form.tags, stockQty: Number(form.stockQty) || 0, status: form.status,
+      isFeatured: form.isFeatured, homepageFeaturedOrder: form.homepageFeaturedOrder,
+      isBestSeller: form.isBestSeller, homepageBestSellerOrder: form.homepageBestSellerOrder,
       shortDescription: form.shortDescription.trim(), description: form.description.trim() || form.shortDescription.trim(),
       highlights: form.highlights.map((h) => h.trim()).filter(Boolean), specs: form.specs.filter((s) => s.label.trim() && s.value.trim()),
     };
@@ -189,8 +216,37 @@ export default function ProductFormPage() {
           <FormField label="Category" htmlFor="categoryId" required><select id="categoryId" className="admin-select" value={form.categoryId} onChange={(e) => set("categoryId", e.target.value)}>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></FormField>
           <FormField label="Brand" htmlFor="brand" required><select id="brand" className="admin-select" value={form.brand} onChange={(e) => set("brand", e.target.value)}>{brands.map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}</select></FormField>
           <FormField label="SKU" htmlFor="sku" required><input id="sku" className="admin-input" value={form.sku} onChange={(e) => set("sku", e.target.value)} /></FormField>
-          <FormField label="Tag" htmlFor="tag"><select id="tag" className="admin-select" value={form.tag} onChange={(e) => set("tag", e.target.value)}>{TAGS.map((t) => <option key={t} value={t}>{t === "none" ? "No tag" : t}</option>)}</select></FormField>
+          <FormField label="Tags" htmlFor="tagInput" full hint="Freeform — used for search/filtering elsewhere on the storefront. Featured and Best Seller are set separately below.">
+            {form.tags.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {form.tags.map((t) => <span key={t} className="admin-badge" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                {t}
+                <button type="button" onClick={() => removeTag(t)} aria-label={`Remove tag ${t}`} style={{ display: "inline-flex", background: "none", border: "none", padding: 0, cursor: "pointer", color: "inherit" }}><Icon name="close" size={11} /></button>
+              </span>)}
+            </div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <input id="tagInput" className="admin-input" list="tag-suggestions" placeholder="Type a tag and press Enter" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={onTagInputKeyDown} />
+              <datalist id="tag-suggestions">{TAG_SUGGESTIONS.map((t) => <option key={t} value={t} />)}</datalist>
+              <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" onClick={() => addTag()}>Add</button>
+            </div>
+          </FormField>
         </div></div>
+
+        <div className="admin-form-section"><h3>Homepage curation</h3><p style={{ fontSize: 12.5, color: "var(--admin-ink-faint)", marginTop: -4 }}>Featured and Best Sellers are admin-picked rails on the homepage. New Arrivals and Discounted are fully automatic and need no input here.</p>
+          <div className="admin-form-grid">
+            <FormField label="Featured" htmlFor="isFeatured">
+              <StatusToggle active={form.isFeatured} onChange={(v) => set("isFeatured", v)} labels={{ on: "Featured", off: "Not featured" }} />
+            </FormField>
+            <FormField label="Featured order" htmlFor="homepageFeaturedOrder" hint={form.isFeatured ? "Lower shows first. Leave blank to auto-assign the next slot." : "Enable Featured to set an order."}>
+              <input id="homepageFeaturedOrder" type="number" min="0" className="admin-input" disabled={!form.isFeatured} placeholder="auto" value={form.homepageFeaturedOrder} onChange={(e) => set("homepageFeaturedOrder", e.target.value)} />
+            </FormField>
+            <FormField label="Best Seller" htmlFor="isBestSeller">
+              <StatusToggle active={form.isBestSeller} onChange={(v) => set("isBestSeller", v)} labels={{ on: "Best Seller", off: "Not a best seller" }} />
+            </FormField>
+            <FormField label="Best Seller order" htmlFor="homepageBestSellerOrder" hint={form.isBestSeller ? "Lower shows first. Leave blank to auto-assign the next slot." : "Enable Best Seller to set an order."}>
+              <input id="homepageBestSellerOrder" type="number" min="0" className="admin-input" disabled={!form.isBestSeller} placeholder="auto" value={form.homepageBestSellerOrder} onChange={(e) => set("homepageBestSellerOrder", e.target.value)} />
+            </FormField>
+          </div>
+        </div>
 
         <div className="admin-form-section"><h3>Pricing &amp; stock</h3><div className="admin-form-grid">
           <FormField label="Price (₹)" htmlFor="price" required><input id="price" type="number" min="0" className="admin-input" value={form.price} onChange={(e) => set("price", e.target.value)} /></FormField>

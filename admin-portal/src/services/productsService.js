@@ -6,7 +6,12 @@ function normalizeProduct(product = {}) {
   const category = product.category || {};
   const images = Array.isArray(product.images) ? product.images : [];
   const image = images[0]?.url || product.image || images[0] || "";
-  const tag = Array.isArray(product.tags) && product.tags.length ? product.tags[0] : product.tag || "none";
+  // tags[] is freeform (search/filtering elsewhere) and fully decoupled
+  // from homepage curation as of the Phase H build — no more overloading
+  // a single tag with "featured"/"best-seller" meaning. `tag` (singular)
+  // is kept only as a read-only convenience (first tag) for any older
+  // callers that haven't moved to `tags` yet.
+  const tags = Array.isArray(product.tags) ? product.tags : product.tag && product.tag !== "none" ? [product.tag] : [];
   const status = product.isActive === false ? "inactive" : "active";
   const nextStock = stockQty <= 0 ? "out-of-stock" : stockQty <= getLowStockThresholdSync() ? "low-stock" : "in-stock";
 
@@ -22,7 +27,8 @@ function normalizeProduct(product = {}) {
     stock: nextStock,
     stockQty: stockQty,
     status,
-    tag: tag === "none" ? "none" : tag,
+    tags,
+    tag: tags[0] || "none",
     image,
     images: images.map((entry) => ({ id: entry._id || entry.id || "", url: entry.url || entry, publicId: entry.publicId || null })),
     shortDescription: product.shortDescription || "",
@@ -32,6 +38,9 @@ function normalizeProduct(product = {}) {
     rating: Number(product.rating || 0),
     reviewCount: Number(product.reviewCount || 0),
     isFeatured: Boolean(product.isFeatured),
+    homepageFeaturedOrder: typeof product.homepageFeaturedOrder === "number" ? product.homepageFeaturedOrder : null,
+    isBestSeller: Boolean(product.isBestSeller),
+    homepageBestSellerOrder: typeof product.homepageBestSellerOrder === "number" ? product.homepageBestSellerOrder : null,
     slug: product.slug || "",
     createdAt: product.createdAt || null,
     updatedAt: product.updatedAt || null,
@@ -39,9 +48,8 @@ function normalizeProduct(product = {}) {
 }
 
 function toApiPayload(data) {
-  const tag = data.tag || "none";
   const stockQty = Number(data.stockQty ?? data.stock ?? 0);
-  return {
+  const payload = {
     name: data.name,
     category: data.categoryId || data.category || "",
     brand: data.brand || "",
@@ -49,14 +57,22 @@ function toApiPayload(data) {
     mrp: Number(data.mrp || data.price || 0),
     stock: stockQty,
     isActive: (data.status || "active") === "active",
-    isFeatured: tag === "featured",
+    isFeatured: Boolean(data.isFeatured),
+    isBestSeller: Boolean(data.isBestSeller),
     shortDescription: data.shortDescription || "",
     description: data.description || data.shortDescription || "",
     sku: String(data.sku || "").trim(),
-    tags: tag && tag !== "none" ? [tag] : [],
+    tags: Array.isArray(data.tags) ? data.tags.map((t) => String(t).trim().toLowerCase()).filter(Boolean) : [],
     highlights: Array.isArray(data.highlights) ? data.highlights.filter(Boolean) : [],
     specifications: Array.isArray(data.specs) ? Object.fromEntries(data.specs.filter((s) => s && s.label && s.value).map((s) => [s.label, s.value])) : {},
   };
+  // Only send an explicit order when the admin actually set one — leaving
+  // it out (rather than sending "") lets the backend auto-assign the next
+  // free slot (see resolveHomepageCuration in the admin-backend
+  // controller), same as Phase 2's create/update default behavior.
+  if (data.homepageFeaturedOrder !== "" && data.homepageFeaturedOrder != null) payload.homepageFeaturedOrder = Number(data.homepageFeaturedOrder);
+  if (data.homepageBestSellerOrder !== "" && data.homepageBestSellerOrder != null) payload.homepageBestSellerOrder = Number(data.homepageBestSellerOrder);
+  return payload;
 }
 
 function buildQueryString(filters = {}) {
@@ -103,6 +119,20 @@ export async function createProduct(data) {
 
 export async function updateProduct(id, data) {
   const payload = await adminApiRequest(`/products/${id}`, { method: "PATCH", body: toApiPayload(data) });
+  return payload?.product ? normalizeProduct(payload.product) : null;
+}
+
+// Quick-toggle affordance (product list page): sends ONLY the curation
+// field(s) that changed rather than routing through toApiPayload, which
+// builds a *full* product payload. The list page's row data doesn't carry
+// highlights/specifications (the list endpoint doesn't return them), so a
+// full-payload PATCH from a row would silently wipe those fields. The
+// admin-backend update endpoint is a true partial update (zod
+// .partial() + Object.assign), so a minimal body here only ever touches
+// what's passed in. Pass e.g. { isFeatured: true } to flip a flag (order
+// auto-assigns) or { homepageFeaturedOrder: 3 } to just reorder.
+export async function updateProductCuration(id, patch) {
+  const payload = await adminApiRequest(`/products/${id}`, { method: "PATCH", body: patch });
   return payload?.product ? normalizeProduct(payload.product) : null;
 }
 
