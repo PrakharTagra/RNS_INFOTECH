@@ -8,22 +8,17 @@ import EmptyState from "../../components/EmptyState";
 import { getOrders, getOrderStats } from "../../services/ordersService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
 
+// Simplified 4-state order lifecycle — see PROGRESS_ORDER_SIMPLIFICATION.md.
 const STATUS_TABS = [
   { value: "", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "confirmed", label: "Confirmed" },
-  { value: "packed", label: "Packed" },
   { value: "shipped", label: "Shipped" },
-  { value: "out-for-delivery", label: "Out for delivery" },
-  { value: "delivered", label: "Delivered" },
-  { value: "return-requested", label: "Return requested" },
-  { value: "returned", label: "Returned" },
-  { value: "refunded", label: "Refunded" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
 function formatINR(n) {
-  return "₹" + n.toLocaleString("en-IN");
+  return "₹" + Number(n || 0).toLocaleString("en-IN");
 }
 function formatWhen(iso) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -52,7 +47,7 @@ export default function OrdersListPage() {
       <div className="admin-page-header">
         <div>
           <h1>Orders</h1>
-          <p>Every order placed on the storefront, with status and payment at a glance.</p>
+          <p>Every paid order placed on the storefront, with status and payment at a glance.</p>
         </div>
       </div>
 
@@ -129,7 +124,7 @@ export default function OrdersListPage() {
                       {o.items.reduce((n, it) => n + it.qty, 0)} item{o.items.reduce((n, it) => n + it.qty, 0) === 1 ? "" : "s"}
                     </td>
                     <td>{formatINR(o.total)}</td>
-                    <td>{o.paymentMethod === "Cash on delivery" ? "COD" : "Online"}</td>
+                    <td>{o.paymentStatus === "refunded" ? "Refunded" : "Paid online"}</td>
                     <td style={{ color: "var(--admin-ink-faint)", fontSize: 12.5 }}>{formatWhen(o.date)}</td>
                     <td>
                       <Badge tone={STATUS_TONE[o.status]}>{statusLabel(o.status)}</Badge>

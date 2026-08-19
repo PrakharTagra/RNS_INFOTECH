@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 
 import AnnouncementBar from "./components/AnnouncementBar";
 import Navbar from "./components/Navbar";
@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import SEO from "./components/SEO";
 import Icon from "./components/Icon";
 import { useOrders, getOrderStatus, getTrackingInfo, canDownloadInvoice } from "./context/OrdersContext";
+
 import { downloadInvoice } from "./lib/invoice";
 import { ErrorState } from "./components/ui/Stateviews";
 
@@ -36,16 +37,11 @@ function formatDateTime(d) {
 export default function OrderDetailPage() {
   const { orderId } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { getOrder, getOrderById, cancelOrder, requestReturn } = useOrders();
+  const { getOrder, getOrderById, cancelOrder } = useOrders();
   const cachedOrder = getOrder(orderId);
   const [order, setOrder] = useState(cachedOrder);
   const [actionBusy, setActionBusy] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const [returnReason, setReturnReason] = useState("");
-  const [returnComments, setReturnComments] = useState("");
-  const [returnBusy, setReturnBusy] = useState(false);
-  const [returnError, setReturnError] = useState(null);
   const justPlaced = Boolean(location.state?.justPlaced);
 
   useEffect(() => {
@@ -131,29 +127,9 @@ export default function OrderDetailPage() {
         </section>
       )}
 
-      {order.status === "delivered" && (
-        <section className="rns-container" style={{ paddingTop: 22 }}>
-          <div className="rns-card" style={{ padding: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600 }}>Request a return</h3>
-            <p style={{ marginTop: 6, color: "var(--rns-ink-soft)", fontSize: 13 }}>
-              Returns are available within the configured return window. Your request will be reviewed by our team.
-            </p>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (!returnReason.trim()) { setReturnError("Please provide a return reason."); return; }
-              setReturnBusy(true); setReturnError(null);
-              try { await requestReturn(order.id, { reason:returnReason.trim(), comments:returnComments.trim() }); setOrder(await getOrderById(order.id)); setReturnReason(""); setReturnComments(""); }
-              catch (err) { setReturnError(err.message || "Unable to submit return request."); }
-              finally { setReturnBusy(false); }
-            }} style={{ marginTop: 14, display:"grid", gap:10, maxWidth:620 }}>
-              <textarea value={returnReason} onChange={e=>setReturnReason(e.target.value)} maxLength={300} required placeholder="Reason for return" style={{ minHeight:70 }} />
-              <textarea value={returnComments} onChange={e=>setReturnComments(e.target.value)} maxLength={2000} placeholder="Additional comments (optional)" style={{ minHeight:80 }} />
-              {returnError && <div style={{ color:"#b42318", fontSize:13 }}>{returnError}</div>}
-              <button className="rns-btn rns-btn--primary" type="submit" disabled={returnBusy}>{returnBusy ? "Submitting…" : "Submit return request"}</button>
-            </form>
-          </div>
-        </section>
-      )}
+      {/* Return requests removed — admin's job ends at "shipped" and
+          there's no post-shipment state to request a return from
+          anymore (see PROGRESS_ORDER_SIMPLIFICATION.md). */}
       <section className="rns-section" style={{ paddingBottom: 12 }}>
         <div
           className="rns-container"
@@ -169,15 +145,9 @@ export default function OrderDetailPage() {
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {order.paymentStatus !== "paid" && !status.isCancelled && (
-              <button
-                onClick={() => navigate("/checkout/payment", { state: { orderId: order.id } })}
-                className="rns-btn rns-btn--primary"
-              >
-                <Icon name="creditCard" size={16} />
-                Pay now
-              </button>
-            )}
+            {/* No "Pay now" branch — GET /orders hard-filters on
+                paymentVerifiedAt, so every order reaching this page is
+                already paid; see storefront-backend's listMyOrders. */}
             {canDownloadInvoice(order) ? (
               <button onClick={() => downloadInvoice(order)} className="rns-btn rns-btn--ghost">
                 <Icon name="download" size={16} />
@@ -201,7 +171,7 @@ export default function OrderDetailPage() {
                 Invoice available after your order ships
               </div>
             )}
-            {["pending", "confirmed", "packed"].includes(order.status) && (
+            {["pending", "confirmed"].includes(order.status) && (
               <button
                 onClick={async () => {
                   setActionBusy(true);
@@ -212,19 +182,6 @@ export default function OrderDetailPage() {
                 disabled={actionBusy}
               >
                 {actionBusy ? "Processing…" : "Cancel order"}
-              </button>
-            )}
-            {order.status === "delivered" && (
-              <button
-                onClick={async () => {
-                  setActionBusy(true);
-                  try { setOrder(await requestReturn(order.id)); } catch (err) { window.alert(err.message || "Return request failed."); }
-                  finally { setActionBusy(false); }
-                }}
-                className="rns-btn rns-btn--ghost"
-                disabled={actionBusy}
-              >
-                {actionBusy ? "Processing…" : "Request return"}
               </button>
             )}
           </div>
@@ -252,15 +209,6 @@ export default function OrderDetailPage() {
                 <div style={{ marginTop: 2, fontSize: 12.5 }}>{status.cancelReason}</div>
               )}
             </div>
-          </div>
-        </section>
-      )}
-
-      {!status.isCancelled && status.isTerminal && (
-        <section className="rns-container" style={{ paddingBottom: 20 }}>
-          <div className="rns-card" style={{ padding: "18px 20px" }}>
-            <strong>{status.currentStage.label}</strong>
-            {order.returnReason && <div style={{ marginTop: 6, color: "var(--rns-ink-soft)", fontSize: 13 }}>{order.returnReason}</div>}
           </div>
         </section>
       )}

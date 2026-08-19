@@ -105,6 +105,19 @@ describe("POST /api/payments/:id/refund", () => {
     expect(res.status).toBe(400);
   });
 
+  // Refund only ever applies to a cancelled order — see
+  // PROGRESS_ORDER_SIMPLIFICATION.md's Phase 1 simplification.
+  it("rejects refunding a payment whose order isn't cancelled", async () => {
+    AdminUser.findById.mockResolvedValue({ _id: "admin123", isActive: true, role: "Owner" });
+    Payment.findById.mockResolvedValue({ _id: "pay1", status: "paid", amount: 3499, razorpayPaymentId: "pay_rp", refundStatus: "none", order: "o1", save: jest.fn() });
+    Order.findById.mockResolvedValue({ _id: "o1", status: "shipped" });
+
+    const res = await request(app).post("/api/payments/pay1/refund").set("Authorization", ownerAuthHeader).send({});
+
+    expect(res.status).toBe(409);
+    expect(initiateRefund).not.toHaveBeenCalled();
+  });
+
   it("refunds the full amount by default and marks the payment refunded", async () => {
     AdminUser.findById.mockResolvedValue({ _id: "admin123", isActive: true, role: "Owner" });
     const save = jest.fn().mockResolvedValue(true);

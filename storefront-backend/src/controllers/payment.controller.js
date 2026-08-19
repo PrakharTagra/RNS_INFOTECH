@@ -241,10 +241,15 @@ const webhook = asyncHandler(async (req, res) => {
         payment.refundedAt = payment.refundedAt || new Date();
         payment.status = "refunded";
         await payment.save();
-        const order = await Order.findById(payment.order);
-        if (order && order.status !== "refunded" && payment.refundedAmount >= payment.amount) {
-          try { await transitionOrder(order, "refunded", { actorType: "system", note: "Razorpay refund processed" }); } catch (_) {}
-        }
+        // NOTE: the simplified 4-state order model (see
+        // PROGRESS_ORDER_SIMPLIFICATION.md) has no "refunded" order status —
+        // "refunded" only ever exists on Payment. A refund is only ever
+        // initiated for an order that's already "cancelled" (see
+        // cancelMyOrder / admin-backend's refund endpoint, which gates on
+        // order.status === "cancelled"), so there is nothing to transition
+        // here. Previously this called transitionOrder(order, "refunded", ...),
+        // which always threw (invalid transition target) and was silently
+        // swallowed — dead code left over from before the simplification.
         try {
           const user = await User.findById(payment.user).select("email").lean();
           if (user?.email) await sendTransactionalEmail("refund", user.email, {

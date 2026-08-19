@@ -1,8 +1,12 @@
 import { adminApiRequest } from "../lib/adminApi";
 
+// Simplified 4-state order lifecycle — see PROGRESS_ORDER_SIMPLIFICATION.md.
+// Normalizes admin-backend's real Order document (not a mock shape) into
+// what the admin-portal order pages render.
 function normalizeOrder(order = {}) {
   const shipping = order.shippingAddress || {};
   const items = Array.isArray(order.items) ? order.items : [];
+  const itemsTotal = Number(order.itemsTotal || 0);
 
   return {
     id: order._id || order.id,
@@ -12,14 +16,16 @@ function normalizeOrder(order = {}) {
       id: item.product || item.id || "",
       name: item.name || "",
       image: item.image || "",
-      category: item.category || "",
+      sku: item.sku || "",
       qty: Number(item.quantity || item.qty || 1),
       price: Number(item.price || 0),
     })),
-    subtotal: Number(order.itemsTotal || order.subtotal || 0),
-    shipping: Number(order.shipping || 0),
-    savings: Number(order.savings || 0),
-    total: Number(order.total || order.itemsTotal || 0),
+    subtotal: Number(order.subtotal || itemsTotal || 0),
+    shippingFee: Number(order.shippingFee || order.deliveryFee || 0),
+    tax: Number(order.tax || 0),
+    discount: Number(order.discount || 0),
+    couponCode: order.couponCode || null,
+    total: itemsTotal,
     shippingAddress: {
       name: shipping.fullName || shipping.name || "",
       phone: shipping.phone || "",
@@ -30,11 +36,23 @@ function normalizeOrder(order = {}) {
       pincode: shipping.pincode || "",
       country: shipping.country || "India",
     },
-    paymentMethod: order.paymentMethod || "Online payment",
-    paymentStatus: order.paymentStatus || "unpaid",
+    // Every order visible here is, by definition, payment-verified — see
+    // storefront-backend's paymentVerifiedAt gate — but admin-backend still
+    // surfaces the live Payment.status alongside it (this is about
+    // refund/failed states on an otherwise-real order, not unpaid drafts —
+    // those never reach this collection view in the first place).
+    paymentStatus: order.paymentStatus || "paid",
+    paymentVerifiedAt: order.paymentVerifiedAt || null,
+    deliveryEstimate: order.deliveryEstimate || "8-10 days",
+    customerName: order.user?.name || shipping.fullName || shipping.name || "",
     customerEmail: order.user?.email || order.customerEmail || "",
     courierName: order.courierName || null,
     trackingId: order.trackingId || null,
+    confirmedAt: order.confirmedAt || null,
+    shippedAt: order.shippedAt || null,
+    cancelledAt: order.cancelledAt || null,
+    cancelReason: order.cancelReason || null,
+    statusHistory: Array.isArray(order.statusHistory) ? order.statusHistory : [],
   };
 }
 
@@ -53,6 +71,9 @@ export async function getOrder(id) {
   return payload?.order ? normalizeOrder(payload.order) : null;
 }
 
+// Stat tiles only — a dedicated backend endpoint isn't worth it for four
+// counts over an already-fetched list, and the Orders page is capped at
+// 100 orders per fetch already, same as before.
 export async function getOrderStats() {
   const items = await getOrders({});
   return {
@@ -60,29 +81,15 @@ export async function getOrderStats() {
     pending: items.filter((o) => o.status === "pending").length,
     confirmed: items.filter((o) => o.status === "confirmed").length,
     shipped: items.filter((o) => o.status === "shipped").length,
-    delivered: items.filter((o) => o.status === "delivered").length,
     cancelled: items.filter((o) => o.status === "cancelled").length,
   };
 }
 
+// Exactly three admin actions on an order — confirm, ship, cancel — mirrors
+// admin-backend/src/controllers/order.controller.js exactly. Nothing else
+// exists: no pack / out-for-delivery / deliver / return endpoints anymore.
 export async function confirmOrder(id) {
   const payload = await adminApiRequest(`/orders/${id}/confirm`, { method: "POST", body: {} });
-  return payload?.order ? normalizeOrder(payload.order) : null;
-}
-export async function packOrder(id) {
-  const payload = await adminApiRequest(`/orders/${id}/pack`, { method: "POST", body: {} });
-  return payload?.order ? normalizeOrder(payload.order) : null;
-}
-export async function markOutForDelivery(id) {
-  const payload = await adminApiRequest(`/orders/${id}/out-for-delivery`, { method: "POST", body: {} });
-  return payload?.order ? normalizeOrder(payload.order) : null;
-}
-export async function markDelivered(id) {
-  const payload = await adminApiRequest(`/orders/${id}/deliver`, { method: "POST", body: {} });
-  return payload?.order ? normalizeOrder(payload.order) : null;
-}
-export async function markReturned(id) {
-  const payload = await adminApiRequest(`/orders/${id}/returned`, { method: "POST", body: {} });
   return payload?.order ? normalizeOrder(payload.order) : null;
 }
 
@@ -94,7 +101,10 @@ export async function shipOrder(id, { courierName, trackingId }) {
   return payload?.order ? normalizeOrder(payload.order) : null;
 }
 
-export async function cancelOrder(id) {
-  const payload = await adminApiRequest(`/orders/${id}/cancel`, { method: "POST" });
+export async function cancelOrder(id, reason) {
+  const payload = await adminApiRequest(`/orders/${id}/cancel`, {
+    method: "POST",
+    body: reason ? { reason } : {},
+  });
   return payload?.order ? normalizeOrder(payload.order) : null;
 }

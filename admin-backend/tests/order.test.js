@@ -56,6 +56,9 @@ describe("GET /api/orders", () => {
     expect(res.body.total).toBe(1);
     expect(populate).toHaveBeenCalledWith("user", "name email");
     expect(res.body.items[0].paymentStatus).toBe("paid");
+    // Admin must never see an unpaid draft order — see
+    // PROGRESS_ORDER_SIMPLIFICATION.md's admin-visibility gap fix.
+    expect(Order.find).toHaveBeenCalledWith(expect.objectContaining({ paymentVerifiedAt: { $ne: null } }));
   });
 
   it("treats a non-id search string as a guaranteed-empty filter instead of erroring", async () => {
@@ -75,15 +78,16 @@ describe("GET /api/orders", () => {
 
 describe("GET /api/orders/:id", () => {
   it("returns 404 for an unknown order", async () => {
-    Order.findById.mockReturnValue({ populate: jest.fn().mockResolvedValue(null) });
+    Order.findOne.mockReturnValue({ populate: jest.fn().mockResolvedValue(null) });
 
     const res = await request(app).get("/api/orders/o1").set("Authorization", authHeader);
 
     expect(res.status).toBe(404);
+    expect(Order.findOne).toHaveBeenCalledWith({ _id: "o1", paymentVerifiedAt: { $ne: null } });
   });
 
   it("returns the order with an \"unpaid\" paymentStatus when it has no Payment yet", async () => {
-    Order.findById.mockReturnValue({
+    Order.findOne.mockReturnValue({
       populate: jest.fn().mockResolvedValue({
         _id: "o1",
         toJSON: () => ({ _id: "o1" }),
@@ -100,7 +104,7 @@ describe("GET /api/orders/:id", () => {
 
 describe("POST /api/orders/:id/confirm", () => {
   it("returns 404 for an unknown order", async () => {
-    Order.findById.mockResolvedValue(null);
+    Order.findOne.mockResolvedValue(null);
 
     const res = await request(app).post("/api/orders/o1/confirm").set("Authorization", authHeader);
 
@@ -108,7 +112,7 @@ describe("POST /api/orders/:id/confirm", () => {
   });
 
   it("rejects confirming an order that isn't pending", async () => {
-    Order.findById.mockResolvedValue({ _id: "o1", status: "shipped", save: jest.fn() });
+    Order.findOne.mockResolvedValue({ _id: "o1", status: "shipped", save: jest.fn() });
 
     const res = await request(app).post("/api/orders/o1/confirm").set("Authorization", authHeader);
 
@@ -118,7 +122,7 @@ describe("POST /api/orders/:id/confirm", () => {
   it("confirms a pending order", async () => {
     const save = jest.fn().mockResolvedValue(true);
     const order = { _id: "o1", status: "pending", save };
-    Order.findById.mockResolvedValue(order);
+    Order.findOne.mockResolvedValue(order);
 
     const res = await request(app).post("/api/orders/o1/confirm").set("Authorization", authHeader);
 
@@ -129,15 +133,15 @@ describe("POST /api/orders/:id/confirm", () => {
   });
 });
 
+// The /pack endpoint no longer exists — admin's job is exactly confirm,
+// ship, or cancel. See PROGRESS_ORDER_SIMPLIFICATION.md.
 describe("POST /api/orders/:id/pack", () => {
-  it("packs a confirmed order", async () => {
-    const save = jest.fn().mockResolvedValue(true);
-    const order = { _id: "o1", status: "confirmed", save };
-    Order.findById.mockResolvedValue(order);
+  it("no longer exists", async () => {
+    Order.findOne.mockResolvedValue({ _id: "o1", status: "confirmed", save: jest.fn() });
+
     const res = await request(app).post("/api/orders/o1/pack").set("Authorization", authHeader).send({});
-    expect(res.status).toBe(200);
-    expect(order.status).toBe("packed");
-    expect(order.packedAt).toBeInstanceOf(Date);
+
+    expect(res.status).toBe(404);
   });
 });
 
@@ -148,7 +152,7 @@ describe("POST /api/orders/:id/ship", () => {
   });
 
   it("rejects shipping an order that isn't confirmed", async () => {
-    Order.findById.mockResolvedValue({ _id: "o1", status: "pending", save: jest.fn() });
+    Order.findOne.mockResolvedValue({ _id: "o1", status: "pending", save: jest.fn() });
 
     const res = await request(app)
       .post("/api/orders/o1/ship")
@@ -160,8 +164,8 @@ describe("POST /api/orders/:id/ship", () => {
 
   it("ships a confirmed order with the given courier/tracking id", async () => {
     const save = jest.fn().mockResolvedValue(true);
-    const order = { _id: "o1", status: "packed", save };
-    Order.findById.mockResolvedValue(order);
+    const order = { _id: "o1", status: "confirmed", save };
+    Order.findOne.mockResolvedValue(order);
 
     const res = await request(app)
       .post("/api/orders/o1/ship")
@@ -178,7 +182,7 @@ describe("POST /api/orders/:id/ship", () => {
 
 describe("POST /api/orders/:id/cancel", () => {
   it("rejects cancelling a shipped order", async () => {
-    Order.findById.mockResolvedValue({ _id: "o1", status: "shipped", items: [], save: jest.fn() });
+    Order.findOne.mockResolvedValue({ _id: "o1", status: "shipped", items: [], save: jest.fn() });
 
     const res = await request(app).post("/api/orders/o1/cancel").set("Authorization", authHeader).send({});
 
@@ -196,7 +200,8 @@ describe("POST /api/orders/:id/cancel", () => {
       ],
       save,
     };
-    Order.findById.mockResolvedValue(order);
+    Order.findOne.mockResolvedValue(order);
+    Payment.findOne.mockResolvedValue(null);
     Product.updateOne.mockResolvedValue({});
 
     const res = await request(app)

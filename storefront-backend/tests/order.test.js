@@ -223,7 +223,9 @@ describe("GET /api/orders", () => {
     const res = await request(app).get("/api/orders").set("Authorization", authHeader);
 
     expect(res.status).toBe(200);
-    expect(Order.find).toHaveBeenCalledWith({ user: "user123" });
+    // listMyOrders hard-filters on paymentVerifiedAt too — see
+    // PROGRESS_ORDER_SIMPLIFICATION.md's Phase 1 order-visibility gate.
+    expect(Order.find).toHaveBeenCalledWith({ user: "user123", paymentVerifiedAt: { $ne: null } });
   });
 
   it("ignores any attempt to filter by another user's id via query params", async () => {
@@ -235,7 +237,7 @@ describe("GET /api/orders", () => {
 
     await request(app).get("/api/orders").query({ user: "someone-else" }).set("Authorization", authHeader);
 
-    expect(Order.find).toHaveBeenCalledWith({ user: "user123" });
+    expect(Order.find).toHaveBeenCalledWith({ user: "user123", paymentVerifiedAt: { $ne: null } });
   });
 
   it("attaches a paymentStatus of \"paid\" when any payment attempt for the order succeeded", async () => {
@@ -266,7 +268,9 @@ describe("GET /api/orders/:id", () => {
     const res = await request(app).get("/api/orders/o1").set("Authorization", authHeader);
 
     expect(res.status).toBe(404);
-    expect(Order.findOne).toHaveBeenCalledWith({ _id: "o1", user: "user123" });
+    // getMyOrderById hard-filters on paymentVerifiedAt too — see
+    // PROGRESS_ORDER_SIMPLIFICATION.md's Phase 1 order-visibility gate.
+    expect(Order.findOne).toHaveBeenCalledWith({ _id: "o1", user: "user123", paymentVerifiedAt: { $ne: null } });
   });
 
   it("returns the order with an \"unpaid\" paymentStatus when it has no Payment yet", async () => {
@@ -274,6 +278,7 @@ describe("GET /api/orders/:id", () => {
       _id: "o1",
       user: "user123",
       status: "pending",
+      paymentVerifiedAt: new Date(),
       toJSON: () => ({ _id: "o1", user: "user123", status: "pending" }),
     });
     Payment.find.mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });

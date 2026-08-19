@@ -85,7 +85,11 @@ export default function PaymentDetailPage() {
             Reconcile
           </button>
         )}
-        {payment.status === "paid" && ["cancelled", "returned"].includes(payment.orderStatus) && payment.refundStatus !== "pending" && payment.refundStatus !== "processed" && (
+        {/* Manual refund only ever applies to a cancelled order — see
+            admin-backend/src/controllers/payment.controller.js. "returned"
+            was removed with the old 10-state order model and can never
+            match here anymore. */}
+        {payment.status === "paid" && payment.orderStatus === "cancelled" && payment.refundStatus !== "pending" && payment.refundStatus !== "processed" && (
           <div style={{ display: "flex", gap: 10 }}>
             <PermissionBoundary permission="payments.refund"><button className="admin-btn admin-btn--ghost" type="button" onClick={() => setConfirmOpen(true)}>
               <Icon name="refresh" size={14} />

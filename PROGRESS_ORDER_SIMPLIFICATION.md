@@ -1,5 +1,9 @@
 # Order / Payment / Delivery Simplification — Progress
 
+**Status: Phases 1–4 all done.** One open decision remains — see "Open
+decision" under Phase 1 below (the orphaned returns subsystem). Nothing
+else is outstanding.
+
 Target model (unchanged goal for every phase below):
 
 1. Customer selects a product, places an order, pays online via Razorpay.
@@ -70,19 +74,35 @@ tell me:
 
 ---
 
-## Phase 2 — Admin portal (Orders page + Dashboard) — ⏳ NOT STARTED
-- Orders page: list all 4 states, Confirm / Ship (courier+tracking form) / Cancel actions wired to the simplified endpoints.
-- Dashboard: verify the UI doesn't still hardcode the old status labels/icons for packed/shipped/delivered etc.
+## Phase 2 — Admin portal (Orders page + Dashboard) — ✅ DONE
+- `admin-portal/src/lib/orderStatuses.js`: collapsed to the real 4 states.
+- Deleted `admin-portal/src/pages/orders/OrderStatusModal.jsx` — dead code, unused anywhere, called a nonexistent `updateOrderStatus` service function and referenced the old 10-state model.
+- Rewrote `admin-portal/src/services/ordersService.js` to match the real backend response shape and the real 3-action API (`confirm`/`ship`/`cancel` only).
+- Rewrote `admin-portal/src/pages/orders/OrdersListPage.jsx` and `OrderDetailPage.jsx` for the 4-state model, correct field names, and the 3 admin actions. `OrderShipModal.jsx` and `DashboardPage.jsx` were already correct against the simplified model — no changes needed.
+- Fixed a leftover in `admin-portal/src/pages/payments/PaymentDetailPage.jsx`: the manual-refund button was gated on `["cancelled", "returned"].includes(payment.orderStatus)` — `"returned"` can never match anymore, narrowed to `"cancelled"` only, matching admin-backend's refund endpoint.
 
-## Phase 3 — Storefront frontend (checkout → payment → orders) — ⏳ NOT STARTED
-- Checkout → Razorpay Checkout.js → verify → land in Orders tab. Remove any "pay later"/"pay now" UI branches.
-- Orders / Order-detail pages: simplified 4-state timeline, 8–10 day estimate, courier/tracking once shipped.
-- Clean up checkout/order UI copy (no leftover placeholder/dead text).
+## Phase 3 — Storefront frontend (checkout → payment → orders) — ✅ DONE
+- `CheckoutPage.jsx` / `PaymentPage.jsx` were already correct: online-only payment, no pay-later branch, fixed 8–10 day delivery line, order created as a reservation before payment and only "placed" once Razorpay verification succeeds.
+- Fixed real gaps in `frontend/src/context/OrdersContext.jsx`:
+  - `TRACKING_STAGES` still had 6 stages (`pending/confirmed/packed/shipped/out-for-delivery/delivered`) — collapsed to the real 3 (`pending/confirmed/shipped`).
+  - `getOrderStatus`'s terminal-state handling still branched on `return-requested`/`returned`/`refunded`, none of which are valid order statuses anymore, and read removed model fields (`packedAt`, `outForDeliveryAt`, `deliveredAt`). Narrowed to `cancelled` as the only terminal state.
+  - `getTrackingInfo` / `canDownloadInvoice` still checked `["shipped", "out-for-delivery", "delivered"]` — narrowed to `status === "shipped"`.
+  - Removed `requestReturn` entirely — it called `POST /orders/:id/return`, a route Phase 1 deleted along with the `delivered`/`returned` states it depended on. This was a live dead-endpoint call, not just unused code.
+- `frontend/src/OrderDetailPage.jsx`: removed the "Request a return" banner/form (gated on the now-nonexistent `"delivered"` status, called the deleted return endpoint), removed the "Request return" action button, fixed the cancel-eligible status list (`["pending","confirmed","packed"]` → `["pending","confirmed"]`, matching `cancelMyOrder`), removed the dead "Pay now" button (every order reaching this page via `GET /orders` is already payment-verified — see Phase 1's `listMyOrders` gate), and removed the now-unreachable "terminal but not cancelled" block (cancelled is the only terminal state left).
+- `frontend/src/OrdersPage.jsx`: same dead "Pay now" button removed for the same reason.
+- Verified `frontend/src/lib/api.js`'s `normalizeOrder`, `PaymentPage.jsx`, and `frontend/src/lib/invoice.js` — all already correct against the simplified model, no changes needed.
 
-## Phase 4 — Final test pass + packaging — ⏳ NOT STARTED
-- Update/remove Jest tests tied to the old status model in both backends.
-- Run full test suites (needs MongoDB) and both frontend builds.
-- Final ZIP, no `node_modules`.
+**Verification performed:** every edited/new file passes `node -c` (backends) or `esbuild` syntax+bundle checks (both frontends). Full bundle resolution (`esbuild --bundle` from each app's real entry point, `App.jsx`/`main.jsx`) was run for **both** `admin-portal` and `frontend` with their actual `package.json` dependencies installed — both resolve cleanly with zero missing-import or missing-export errors. Still could not run the Jest suites (no MongoDB available here).
+
+## Phase 4 — Final test pass + packaging — ✅ DONE
+- Ran the full Jest suites for **both** backends (all models mocked, so no MongoDB needed):
+  - `admin-backend`: **21 suites / 123 tests, all passing**, including `tests/order.test.js`, which was already written to expect the `paymentVerifiedAt` admin-visibility gate — confirming the Phase 1 gap fix above was exactly right.
+  - `storefront-backend`: **20 suites / 130 tests, all passing**.
+  - No test files needed updating — the ones covering order lifecycle (`phase8_9_lifecycle.test.js`, `order.test.js` in both backends) were already written against the simplified 4-state model. The orphaned returns-subsystem test (`phase18_19_email_return.test.js`) only exercises the separate `ReturnRequest` status machine, not `Order`, so it's unaffected either way and still passes.
+- Built both frontends for production with the real Vite config — both succeed cleanly:
+  - `frontend` (storefront): 396 modules, built in ~8s.
+  - `admin-portal`: 772 modules, built in ~7s.
+- Final ZIP repackaged with no `node_modules`, no `.git`.
 
 ---
 
@@ -103,4 +123,35 @@ admin-backend/src/controllers/payment.controller.js
 admin-backend/src/routes/order.routes.js
 admin-backend/src/validators/order.validators.js
 admin-backend/src/controllers/dashboard.controller.js
+```
+
+## Gaps found and fixed after Phase 1 was marked done
+```
+storefront-backend/src/controllers/payment.controller.js
+  — refund webhook called transitionOrder(order, "refunded", ...), a
+    status that no longer exists; always threw and was silently
+    swallowed. Removed the dead call.
+
+admin-backend/src/controllers/order.controller.js
+  — list/getById/confirm/ship/cancel had no paymentVerifiedAt filter,
+    so unpaid draft orders (created by placeOrder before payment)
+    could appear — and even be actioned — in the admin Orders tab.
+    Added a shared PAID_ORDER_FILTER to all five handlers.
+```
+
+## Files touched in Phase 2
+```
+admin-portal/src/lib/orderStatuses.js
+admin-portal/src/services/ordersService.js
+admin-portal/src/pages/orders/OrdersListPage.jsx
+admin-portal/src/pages/orders/OrderDetailPage.jsx
+admin-portal/src/pages/orders/OrderStatusModal.jsx   (deleted)
+admin-portal/src/pages/payments/PaymentDetailPage.jsx
+```
+
+## Files touched in Phase 3
+```
+frontend/src/context/OrdersContext.jsx
+frontend/src/OrderDetailPage.jsx
+frontend/src/OrdersPage.jsx
 ```

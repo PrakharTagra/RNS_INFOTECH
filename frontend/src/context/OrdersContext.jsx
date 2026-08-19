@@ -4,17 +4,14 @@ import { useAuth } from "./AuthContext";
 
 const OrdersContext = createContext(null);
 
-// These three stages are the only ones with a place in the visual
-// timeline — "cancelled" is a terminal state handled separately by
-// isCancelled below, same as admin-backend's ORDER_STATUSES enum
-// (pending/confirmed/shipped/cancelled).
+// Only three stages have a place in the visual timeline now — "cancelled"
+// is a terminal state handled separately by isCancelled below, matching
+// admin-backend's ORDER_STATUSES enum exactly (pending/confirmed/shipped/
+// cancelled — see PROGRESS_ORDER_SIMPLIFICATION.md).
 export const TRACKING_STAGES = [
   { key: "pending", label: "Order placed" },
   { key: "confirmed", label: "Confirmed" },
-  { key: "packed", label: "Packed" },
   { key: "shipped", label: "Shipped" },
-  { key: "out-for-delivery", label: "Out for delivery" },
-  { key: "delivered", label: "Delivered" },
 ];
 
 // getTrackingInfo/getOrderStatus/canDownloadInvoice used to simulate a
@@ -25,53 +22,35 @@ export const TRACKING_STAGES = [
 // shows "Shipped" once someone in the admin portal has actually marked
 // it shipped, not on a fixed timer.
 export function getTrackingInfo(order) {
-  if (!["shipped", "out-for-delivery", "delivered"].includes(order.status)) return null;
+  if (order.status !== "shipped") return null;
   if (!order.courierName && !order.trackingId) return null;
   return { courierName: order.courierName, trackingId: order.trackingId };
 }
 
 export function canDownloadInvoice(order) {
-  return ["shipped", "out-for-delivery", "delivered"].includes(order.status);
+  return order.status === "shipped";
 }
 
 export function getOrderStatus(order) {
   const status = order.status || "pending";
-  const terminal = ["cancelled", "return-requested", "returned", "refunded"];
-  if (terminal.includes(status)) {
-    const labelMap = {
-      cancelled: "Cancelled",
-      "return-requested": "Return requested",
-      returned: "Returned",
-      refunded: "Refunded",
-    };
+  if (status === "cancelled") {
     return {
       currentIndex: -1,
-      currentStage: { key: status, label: labelMap[status] || status },
-      isShipped: ["shipped", "out-for-delivery", "delivered"].includes(status),
-      isCancelled: status === "cancelled",
+      currentStage: { key: status, label: "Cancelled" },
+      isShipped: false,
+      isCancelled: true,
       isTerminal: true,
       cancelReason: order.cancelReason || null,
       cancelledAt: order.cancelledAt || null,
-      stages: TRACKING_STAGES.map((stage) => ({
-        ...stage,
-        date: order[`${stage.key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}At`] || (stage.key === "pending" ? order.date : null),
-        complete: false,
-      })),
+      stages: TRACKING_STAGES.map((stage) => ({ ...stage, date: null, complete: false })),
     };
   }
   const currentIndex = Math.max(0, TRACKING_STAGES.findIndex((s) => s.key === status));
-  const fieldMap = {
-    pending: "date",
-    confirmed: "confirmedAt",
-    packed: "packedAt",
-    shipped: "shippedAt",
-    "out-for-delivery": "outForDeliveryAt",
-    delivered: "deliveredAt",
-  };
+  const fieldMap = { pending: "date", confirmed: "confirmedAt", shipped: "shippedAt" };
   return {
     currentIndex,
     currentStage: TRACKING_STAGES[currentIndex],
-    isShipped: ["shipped", "out-for-delivery", "delivered"].includes(status),
+    isShipped: status === "shipped",
     isCancelled: false,
     isTerminal: false,
     stages: TRACKING_STAGES.map((stage, i) => ({
@@ -155,13 +134,11 @@ export function OrdersProvider({ children }) {
       setOrders((prev) => prev.map((item) => item.id === order.id ? order : item));
       return order;
     },
-    requestReturn: async (id, payload) => {
-      const response = await apiRequest(`/orders/${id}/return`, { method: "POST", body: payload, authRequired: true });
-      const orderResponse = await apiRequest(`/orders/${id}`, { authRequired: true });
-      const order = normalizeOrder(orderResponse.order);
-      setOrders((prev) => prev.map((item) => item.id === order.id ? order : item));
-      return response.returnRequest;
-    },
+    // requestReturn intentionally removed — storefront-backend deleted
+    // POST /orders/:id/return along with the "delivered"/"returned"
+    // states it depended on (see PROGRESS_ORDER_SIMPLIFICATION.md).
+    // Admin's job ends at "shipped"; there's no post-shipment state to
+    // request a return from anymore.
   }), [orders, currentUser, isAuthenticated]);
 
   return <OrdersContext.Provider value={api}>{children}</OrdersContext.Provider>;

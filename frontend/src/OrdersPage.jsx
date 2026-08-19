@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import AnnouncementBar from "./components/AnnouncementBar";
 import Navbar from "./components/Navbar";
@@ -52,7 +52,6 @@ function StatusBadge({ status }) {
  */
 export default function OrdersPage() {
   const { orders, ordersError } = useOrders();
-  const navigate = useNavigate();
 
   return (
     <>
@@ -176,15 +175,10 @@ export default function OrdersPage() {
                     </div>
 
                     <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-                      {order.paymentStatus !== "paid" && !status.isCancelled && (
-                        <button
-                          onClick={() => navigate("/checkout/payment", { state: { orderId: order.id } })}
-                          className="rns-btn rns-btn--primary"
-                        >
-                          <Icon name="creditCard" size={15} />
-                          Pay now
-                        </button>
-                      )}
+                      {/* No "Pay now" branch — GET /orders hard-filters
+                          on paymentVerifiedAt, so every order listed here
+                          is already paid; see storefront-backend's
+                          listMyOrders. */}
                       <Link to={`/orders/${order.id}`} className="rns-btn rns-btn--ghost">
                         <Icon name="package" size={15} />
                         Track package

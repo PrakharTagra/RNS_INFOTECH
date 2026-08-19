@@ -3,7 +3,9 @@ const crypto = require("crypto");
 
 jest.mock("../src/models/Order");
 jest.mock("../src/models/Payment");
+jest.mock("../src/models/User");
 jest.mock("../src/services/razorpay.service");
+jest.mock("../src/services/email.service");
 jest.mock("../src/config/env", () => {
   const actual = jest.requireActual("../src/config/env");
   return {
@@ -20,6 +22,7 @@ jest.mock("../src/config/env", () => {
 const createApp = require("../src/app");
 const Order = require("../src/models/Order");
 const Payment = require("../src/models/Payment");
+const User = require("../src/models/User");
 const {
   createRazorpayOrder,
   verifyPaymentSignature,
@@ -34,6 +37,13 @@ const validOrderId = "507f1f77bcf86cd799439011";
 beforeEach(() => {
   jest.clearAllMocks();
   Order.findById.mockResolvedValue({ _id: validOrderId, reservationStatus: "reserved", reservationExpiresAt: new Date(Date.now() + 60000), couponReservationId: null });
+  // The payment-confirmation/refund emails look up the order/payment owner's
+  // email via User.findById(...).select(...).lean() — mocked here (not just
+  // the transactional email service) so that code path never touches a real
+  // Mongoose connection during tests. See PROGRESS_ORDER_SIMPLIFICATION.md's
+  // Phase 4 test-suite fixes: without this, these tests hang until Jest's
+  // timeout since mongoose buffers commands waiting for a DB that isn't there.
+  User.findById.mockReturnValue({ select: jest.fn().mockReturnThis(), lean: jest.fn().mockResolvedValue(null) });
 });
 
 describe("POST /api/payments/create-order", () => {
@@ -248,5 +258,30 @@ describe("POST /api/payments/webhook", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.received).toBe(true);
+  });
+
+  // Regression test for the dead transitionOrder(order, "refunded", ...)
+  // call removed in PROGRESS_ORDER_SIMPLIFICATION.md's Phase 1 gap fix —
+  // "refunded" was never a valid order status, so it always threw and was
+  // silently swallowed. The payment doc alone should end up "refunded";
+  // nothing here should ever touch Order.
+  it("marks a payment refunded on refund.processed without touching Order", async () => {
+    const save = jest.fn().mockResolvedValue(true);
+    const payment = { status: "paid", refundStatus: "pending", save };
+    Payment.findOne.mockResolvedValue(payment);
+
+    const payload = {
+      event: "refund.processed",
+      payload: { refund: { entity: { id: "rfnd_1", payment_id: "pay_XYZ789", amount: 349900 } } },
+    };
+
+    const res = await signedWebhookRequest(payload);
+
+    expect(res.status).toBe(200);
+    expect(payment.status).toBe("refunded");
+    expect(payment.refundStatus).toBe("processed");
+    expect(payment.razorpayRefundId).toBe("rfnd_1");
+    expect(Order.findById).not.toHaveBeenCalled();
+    expect(Order.findOne).not.toHaveBeenCalled();
   });
 });

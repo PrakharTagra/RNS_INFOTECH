@@ -8,20 +8,20 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import useToast from "../../hooks/useToast";
 import OrderShipModal from "./OrderShipModal";
 
-import { getOrder, confirmOrder, packOrder, shipOrder, markOutForDelivery, markDelivered, markReturned, cancelOrder } from "../../services/ordersService";
+import { getOrder, confirmOrder, cancelOrder } from "../../services/ordersService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
 
 function formatINR(n) {
-  return "₹" + n.toLocaleString("en-IN");
+  return "₹" + Number(n || 0).toLocaleString("en-IN");
 }
 function formatDateTime(iso) {
   return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
 
-const TIMELINE_STAGES = ["pending", "confirmed", "packed", "shipped", "out-for-delivery", "delivered"];
+// Simplified 4-state order lifecycle — see PROGRESS_ORDER_SIMPLIFICATION.md.
+// pending -> confirmed -> shipped is the only "happy path"; cancelled is a
+// separate terminal branch off pending/confirmed, not a stage on this line.
+const TIMELINE_STAGES = ["pending", "confirmed", "shipped"];
 
 export default function OrderDetailPage() {
   const { id } = useParams();
@@ -55,16 +55,6 @@ export default function OrderDetailPage() {
       showToast(err.message || "Something went wrong.", "danger");
     } finally {
       setConfirming(false);
-    }
-  }
-
-  async function runTransition(action, message) {
-    try {
-      const updated = await action(order.id);
-      setOrder(updated);
-      showToast(message);
-    } catch (err) {
-      showToast(err.message || "Something went wrong.", "danger");
     }
   }
 
@@ -103,7 +93,7 @@ export default function OrderDetailPage() {
   }
 
   const currentIndex = TIMELINE_STAGES.indexOf(order.status);
-  const canCancel = ["pending", "confirmed", "packed"].includes(order.status);
+  const canCancel = ["pending", "confirmed"].includes(order.status);
 
   return (
     <PermissionBoundary permission="orders.write"><div>
@@ -115,11 +105,14 @@ export default function OrderDetailPage() {
       <div className="admin-page-header">
         <div>
           <h1>{order.id}</h1>
-          <p style={{ marginBottom: 8 }}>
-            Placed {formatDateTime(order.date)} · {order.paymentMethod}
-          </p>
+          <p style={{ marginBottom: 8 }}>Placed {formatDateTime(order.date)} · Paid online</p>
           <Badge tone={STATUS_TONE[order.status]}>{statusLabel(order.status)}</Badge>
         </div>
+        {/* Admin's role is exactly three actions on an order, in this
+            order: confirm (pending -> confirmed), ship (confirmed ->
+            shipped, with courier + tracking), or cancel
+            (pending/confirmed -> cancelled). Nothing else — no pack,
+            out-for-delivery, deliver, or return actions anymore. */}
         <div style={{ display: "flex", gap: 10 }}>
           {order.status === "pending" && (
             <button className="admin-btn admin-btn--primary" type="button" onClick={handleConfirm} disabled={confirming}>
@@ -128,28 +121,8 @@ export default function OrderDetailPage() {
             </button>
           )}
           {order.status === "confirmed" && (
-            <button className="admin-btn admin-btn--primary" type="button" onClick={() => runTransition(packOrder, "Order packed")}>
-              <Icon name="check" size={14} /> Pack order
-            </button>
-          )}
-          {order.status === "packed" && (
             <button className="admin-btn admin-btn--primary" type="button" onClick={() => setShipping(true)}>
               <Icon name="truck" size={14} /> Mark as shipped
-            </button>
-          )}
-          {order.status === "shipped" && (
-            <button className="admin-btn admin-btn--primary" type="button" onClick={() => runTransition(markOutForDelivery, "Marked out for delivery")}>
-              <Icon name="truck" size={14} /> Out for delivery
-            </button>
-          )}
-          {order.status === "out-for-delivery" && (
-            <button className="admin-btn admin-btn--primary" type="button" onClick={() => runTransition(markDelivered, "Order delivered")}>
-              <Icon name="check" size={14} /> Mark delivered
-            </button>
-          )}
-          {order.status === "return-requested" && (
-            <button className="admin-btn admin-btn--primary" type="button" onClick={() => runTransition(markReturned, "Return received")}>
-              <Icon name="check" size={14} /> Mark returned
             </button>
           )}
           {canCancel && (
@@ -160,11 +133,11 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {["cancelled", "return-requested", "returned", "refunded"].includes(order.status) ? (
-        <div className="admin-card" style={{ marginBottom: 20, borderColor: order.status === "cancelled" ? "var(--admin-danger)" : "var(--admin-line)" }}>
+      {order.status === "cancelled" ? (
+        <div className="admin-card" style={{ marginBottom: 20, borderColor: "var(--admin-danger)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--admin-danger)", fontWeight: 600, fontSize: 13.5 }}>
             <Icon name="alert" size={16} />
-            {statusLabel(order.status)}
+            Cancelled{order.cancelReason ? ` — ${order.cancelReason}` : ""}
           </div>
         </div>
       ) : (
@@ -200,7 +173,7 @@ export default function OrderDetailPage() {
             </div>
           ) : (
             <p style={{ marginTop: 14, fontSize: 12.5, color: "var(--admin-ink-faint)" }}>
-              Expected delivery: {formatDate(order.deliveryDate)} · {order.deliveryLabel}
+              Delivery estimate shown to the customer: {order.deliveryEstimate}
             </p>
           )}
         </div>
@@ -215,25 +188,29 @@ export default function OrderDetailPage() {
                 <thead>
                   <tr>
                     <th>Product</th>
-                    <th>Category</th>
+                    <th>SKU</th>
                     <th>Qty</th>
                     <th style={{ textAlign: "right" }}>Price</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {order.items.map((it) => (
-                    <tr key={it.id}>
+                  {order.items.map((it, i) => (
+                    <tr key={`${it.id}-${i}`}>
                       <td>
                         <div className="admin-table__title-cell">
-                          <img className="admin-table__thumb" src={it.image} alt="" />
+                          {it.image && <img className="admin-table__thumb" src={it.image} alt="" />}
                           <div>
-                            <Link to={`/products/${it.id}`} className="admin-table__title-main" style={{ textDecoration: "none" }}>
-                              {it.name}
-                            </Link>
+                            {it.id ? (
+                              <Link to={`/products/${it.id}`} className="admin-table__title-main" style={{ textDecoration: "none" }}>
+                                {it.name}
+                              </Link>
+                            ) : (
+                              <span className="admin-table__title-main">{it.name}</span>
+                            )}
                           </div>
                         </div>
                       </td>
-                      <td>{it.category}</td>
+                      <td>{it.sku}</td>
                       <td>{it.qty}</td>
                       <td style={{ textAlign: "right" }}>{formatINR(it.price)}</td>
                     </tr>
@@ -254,12 +231,14 @@ export default function OrderDetailPage() {
               </div>
               <div>
                 <span>Shipping</span>
-                <span>{order.shipping ? formatINR(order.shipping) : "Free"}</span>
+                <span>{order.shippingFee ? formatINR(order.shippingFee) : "Free"}</span>
               </div>
-              <div>
-                <span>Savings</span>
-                <span>{formatINR(order.savings)}</span>
-              </div>
+              {order.discount > 0 && (
+                <div>
+                  <span>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</span>
+                  <span>-{formatINR(order.discount)}</span>
+                </div>
+              )}
               <div>
                 <span>Total</span>
                 <span>{formatINR(order.total)}</span>
@@ -287,10 +266,14 @@ export default function OrderDetailPage() {
             <div className="admin-kv-list">
               <div>
                 <span>Method</span>
-                <span>{order.paymentMethod}</span>
+                <span>Razorpay (online)</span>
+              </div>
+              <div>
+                <span>Status</span>
+                <span>{order.paymentStatus === "refunded" ? "Refunded" : "Paid"}</span>
               </div>
             </div>
-            <Link to={`/payments/PAY-${order.id}`} className="admin-btn admin-btn--ghost admin-btn--sm" style={{ marginTop: 12 }}>
+            <Link to="/payments" className="admin-btn admin-btn--ghost admin-btn--sm" style={{ marginTop: 12 }}>
               <Icon name="creditCard" size={13} />
               View payment
             </Link>
@@ -302,7 +285,7 @@ export default function OrderDetailPage() {
       <ConfirmDialog
         open={cancelling}
         title="Cancel this order?"
-        description={`${order.id} will be marked cancelled and removed from the fulfillment queue.`}
+        description={`${order.id} will be marked cancelled, refunded, and removed from the fulfillment queue.`}
         confirmLabel="Cancel order"
         onConfirm={handleCancelConfirmed}
         onCancel={() => setCancelling(false)}
