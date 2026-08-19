@@ -62,7 +62,7 @@ export default function HomePage() {
           id: category.slug || category._id,
           name: category.name,
           image: category.image?.url || category.image || "/assets/categories/pentablets.jpg",
-          icon: "layers",
+          icon: category.icon || "layers",
         }));
         setCategories(nextCategories);
         setHomepageProducts(homepageProductsRes);

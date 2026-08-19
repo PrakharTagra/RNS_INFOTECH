@@ -2,10 +2,15 @@ const { z } = require("zod");
 
 const SLUG_RE = /^[a-z0-9-]+$/;
 
+// Kept in sync with admin-portal's CategoryFormModal ICONS list — those
+// are the only keys the storefront's Icon component actually renders.
+const CATEGORY_ICONS = ["display", "tablet", "pen", "layers", "package", "tag", "gear", "star"];
+
 const createCategorySchema = z.object({
   name: z.string().trim().min(2).max(80),
   slug: z.string().trim().toLowerCase().regex(SLUG_RE, "slug may only contain lowercase letters, numbers, and hyphens").optional(),
   description: z.string().trim().max(1000).optional().default(""),
+  icon: z.enum(CATEGORY_ICONS).optional(),
   sortOrder: z.coerce.number().int().optional(),
   isActive: z.coerce.boolean().optional(),
 });

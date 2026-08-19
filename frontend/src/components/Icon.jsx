@@ -228,6 +228,15 @@ const PATHS = {
       <circle cx="8" cy="7.5" r="1.3" fill="currentColor" stroke="none" />
     </>
   ),
+  // Matches admin-portal's Icon "gear" glyph — needed here so a category
+  // saved with icon: "gear" actually renders instead of silently
+  // showing nothing (this component returns null for unknown names).
+  gear: (
+    <>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 3.5v2.4M12 18.1v2.4M20.5 12h-2.4M5.9 12H3.5M17.7 6.3l-1.7 1.7M8 16l-1.7 1.7M17.7 17.7L16 16M8 8L6.3 6.3" />
+    </>
+  ),
   fileText: (
     <>
       <path d="M6 2.5h9l5 5V21a1 1 0 01-1 1H6a1 1 0 01-1-1V3.5a1 1 0 011-1z" />

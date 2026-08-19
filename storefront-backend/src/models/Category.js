@@ -11,6 +11,7 @@ const categorySchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     description: { type: String, trim: true, default: "" },
+    icon: { type: String, trim: true, default: "tag" },
     image: {
       url: { type: String, default: null },
       publicId: { type: String, default: null },

@@ -42,6 +42,7 @@ export async function createCategory(data) {
     body: {
       name: String(data.name || "").trim(),
       description: String(data.description || "").trim(),
+      icon: data.icon || "tag",
       isActive: (data.status || "active") === "active",
       sortOrder: Number(data.sortOrder || 0),
     },
@@ -55,6 +56,7 @@ export async function updateCategory(id, data) {
     body: {
       name: data.name,
       description: data.description,
+      icon: data.icon,
       isActive: data.status === undefined ? undefined : (data.status === "active"),
       sortOrder: data.sortOrder,
     },

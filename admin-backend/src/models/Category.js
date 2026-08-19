@@ -15,6 +15,10 @@ const categorySchema = new mongoose.Schema(
     // uniqueSlug() collision check, not a DB-level retry loop.
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     description: { type: String, trim: true, default: "" },
+    // One of the fixed icon keys the admin-portal picker offers (see
+    // admin-portal's CategoryFormModal ICONS list / Icon component) —
+    // rendered next to the category name in the storefront nav/homepage.
+    icon: { type: String, trim: true, default: "tag" },
     image: {
       url: { type: String, default: null },
       publicId: { type: String, default: null },
