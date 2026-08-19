@@ -48,13 +48,39 @@ export async function getCouponStats() {
   return payload || { total: 0, active: 0, expired: 0, totalRedemptions: 0 };
 }
 
+// The backend's Zod schema for expiresAt accepts a real date, null, or the
+// field being omitted entirely — but coerces "" (what a cleared/blank HTML
+// date input sends) into `new Date("")`, an Invalid Date, which fails
+// validation with a generic "Validation failed." error. Normalize blank
+// strings to null here so "no expiry" round-trips correctly.
+function normalizeExpiresAt(value) {
+  if (value === "" || value === undefined) return null;
+  return value;
+}
+
 export async function createCoupon(data) {
-  const payload = await adminApiRequest("/coupons", { method: "POST", body: { ...data, code: String(data.code || "").trim().toUpperCase(), type: data.type === "flat" ? "fixed" : data.type } });
+  const payload = await adminApiRequest("/coupons", {
+    method: "POST",
+    body: {
+      ...data,
+      code: String(data.code || "").trim().toUpperCase(),
+      type: data.type === "flat" ? "fixed" : data.type,
+      expiresAt: normalizeExpiresAt(data.expiresAt),
+    },
+  });
   return normalizeCoupon(payload?.coupon);
 }
 
 export async function updateCoupon(id, data) {
-  const payload = await adminApiRequest(`/coupons/${id}`, { method: "PATCH", body: { ...data, code: data.code ? String(data.code).trim().toUpperCase() : data.code, type: data.type === "flat" ? "fixed" : data.type } });
+  const payload = await adminApiRequest(`/coupons/${id}`, {
+    method: "PATCH",
+    body: {
+      ...data,
+      code: data.code ? String(data.code).trim().toUpperCase() : data.code,
+      type: data.type === "flat" ? "fixed" : data.type,
+      expiresAt: normalizeExpiresAt(data.expiresAt),
+    },
+  });
   return normalizeCoupon(payload?.coupon);
 }
 
