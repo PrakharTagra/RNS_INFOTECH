@@ -433,8 +433,8 @@ export const products = [
 export const whyChooseUs = [
   {
     icon: "truck",
-    title: "Fastest delivery",
-    body: "Orders reach your doorstep within 2–3 working days across the region.",
+    title: "Reliable delivery",
+    body: "Every order is delivered within 8-10 days, tracked from dispatch to your door.",
   },
   {
     icon: "headset",
@@ -523,7 +523,7 @@ export const faqs = [
   },
   {
     q: "How long does delivery take?",
-    a: "In-stock orders are dispatched within 2–3 working days, with tracking shared on shipment.",
+    a: "Every order is delivered within 8-10 days of being placed, with tracking shared on shipment.",
   },
   {
     q: "Do you offer bulk pricing for studios or institutions?",
@@ -814,7 +814,7 @@ export const returnPolicy = {
     },
     {
       title: "Refunds",
-      body: "Once the returned item passes inspection, refunds are issued to the original payment method within 5-7 business days. Orders paid via COD are refunded via bank transfer.",
+      body: "Once the returned item passes inspection, refunds are issued to the original online payment method within 5-7 business days.",
     },
     {
       title: "Exchanges",

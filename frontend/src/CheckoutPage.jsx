@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import AnnouncementBar from "./components/AnnouncementBar";
@@ -10,7 +10,7 @@ import AddressForm from "./components/AddressForm";
 import { useCart } from "./context/CartContext";
 import { useOrders } from "./context/OrdersContext";
 import { useAddresses } from "./context/AddressContext";
-import { getDeliveryOptions, formatDeliveryDate } from "./lib/delivery";
+import { DELIVERY_ESTIMATE_LABEL, DELIVERY_ESTIMATE_TEXT } from "./lib/delivery";
 import { getCheckoutQuote } from "./lib/api";
 
 import { announcement, nav, footer } from "./data/siteData";
@@ -32,10 +32,12 @@ function formatINR(n) {
  *     cart only ever holds products.
  *   - Address comes from the saved address book (AddressContext /
  *     ProfilePage), with an inline "add new address" fallback.
- *   - Delivery date is a real choice between standard/express shipping
- *     windows; the selected delivery fee is priced server-side.
- *   - Paying online hands off to the Razorpay-style
- *     PaymentPage; Cash on delivery places the order immediately.
+ *   - Delivery is not a customer choice: every order ships standard,
+ *     8-10 days, shown as a fixed line rather than a picker.
+ *   - Payment is online-only (Razorpay) — no cash on delivery, no "pay
+ *     later" at checkout. The order is only created here as a
+ *     reserved/pending record so stock can be held; it is not
+ *     considered placed until PaymentPage confirms the payment.
  */
 export default function CheckoutPage() {
   const location = useLocation();
@@ -47,12 +49,13 @@ export default function CheckoutPage() {
   const items = location.state?.items || [];
   const mode = location.state?.mode || "cart"; // "cart" | "buy-now"
 
-  const deliveryOptions = useMemo(() => getDeliveryOptions(), []);
+  // Delivery is fixed (8-10 days, standard) and payment is online-only —
+  // neither is a user-facing choice anymore, so this is a constant
+  // rather than state.
+  const selectedDeliveryId = "standard";
 
   const [selectedAddressId, setSelectedAddressId] = useState(defaultId || addresses[0]?.id || null);
   const [addingAddress, setAddingAddress] = useState(addresses.length === 0);
-  const [selectedDeliveryId, setSelectedDeliveryId] = useState(deliveryOptions[0].id);
-  const [paymentMethod, setPaymentMethod] = useState("online");
   const [formError, setFormError] = useState("");
   const [placing, setPlacing] = useState(false);
 
@@ -74,7 +77,6 @@ export default function CheckoutPage() {
   const mrpTotal = items.reduce((sum, i) => sum + (i.mrp || i.price) * i.qty, 0);
   const savings = Math.max(0, mrpTotal - clientSubtotal);
 
-  const deliveryOption = deliveryOptions.find((d) => d.id === selectedDeliveryId) || deliveryOptions[0];
   const subtotal = Number(quote?.subtotal ?? clientSubtotal);
   const shipping = Number(quote?.shippingFee ?? 0);
   const deliveryFee = Number(quote?.deliveryFee ?? 0);
@@ -91,7 +93,7 @@ export default function CheckoutPage() {
       const response = await getCheckoutQuote({
         items,
         couponCode,
-        deliveryMethod: selectedDeliveryId === "express" ? "express" : "standard",
+        deliveryMethod: selectedDeliveryId,
       });
       setQuote(response?.quote || null);
     } catch (err) {
@@ -158,7 +160,7 @@ export default function CheckoutPage() {
       const response = await getCheckoutQuote({
         items,
         couponCode: code,
-        deliveryMethod: selectedDeliveryId === "express" ? "express" : "standard",
+        deliveryMethod: selectedDeliveryId,
       });
       const nextQuote = response?.quote;
       if (!nextQuote) throw new Error("The checkout quote was empty.");
@@ -198,7 +200,7 @@ export default function CheckoutPage() {
         items,
         shippingAddress: selectedAddress,
         couponCode: appliedCoupon?.code,
-        deliveryMethod: selectedDeliveryId === "express" ? "express" : "standard",
+        deliveryMethod: selectedDeliveryId,
       });
 
       // The quote is advisory until order creation. The backend recalculates
@@ -219,11 +221,10 @@ export default function CheckoutPage() {
 
       if (mode === "cart") clearCart();
 
-      if (paymentMethod === "cod") {
-        navigate(`/orders/${order.id}`, { state: { justPlaced: true } });
-      } else {
-        navigate("/checkout/payment", { state: { orderId: order.id, mode } });
-      }
+      // Online payment only — the order record just created is a
+      // reservation, not a placed order. It's only actually placed once
+      // PaymentPage confirms the Razorpay payment.
+      navigate("/checkout/payment", { state: { orderId: order.id, mode } });
     } catch (err) {
       setFormError(err.message || "Something went wrong placing your order. Please try again.");
     } finally {
@@ -324,51 +325,36 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Delivery date */}
+            {/* Delivery — fixed for every order, not a customer choice */}
             <div className="rns-card" style={{ padding: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon name="calendar" size={16} style={{ color: "var(--rns-ink-soft)" }} />
                 <h2 style={{ fontSize: 15, fontFamily: "var(--rns-font-display)", fontWeight: 600 }}>
-                  Delivery date
+                  Delivery
                 </h2>
               </div>
-              <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-                {deliveryOptions.map((opt) => (
-                  <label
-                    key={opt.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      border: `1px solid ${selectedDeliveryId === opt.id ? "var(--rns-ink)" : "var(--rns-line)"}`,
-                      borderRadius: "var(--rns-r-sm)",
-                      padding: "12px 14px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                      <input
-                        type="radio"
-                        name="delivery"
-                        checked={selectedDeliveryId === opt.id}
-                        onChange={() => setSelectedDeliveryId(opt.id)}
-                        style={{ marginTop: 3 }}
-                      />
-                      <div>
-                        <div style={{ fontSize: 13.5, fontWeight: 500 }}>{opt.label}</div>
-                        <div style={{ fontSize: 12, color: "var(--rns-ink-faint)", marginTop: 2 }}>
-                          Arrives by {formatDeliveryDate(opt.date)}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", whiteSpace: "nowrap" }}>{opt.note}</div>
-                  </label>
-                ))}
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                  border: "1px solid var(--rns-line)",
+                  borderRadius: "var(--rns-r-sm)",
+                  padding: "12px 14px",
+                }}
+              >
+                <Icon name="truck" size={16} style={{ color: "var(--rns-ink-soft)", marginTop: 2 }} />
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>{DELIVERY_ESTIMATE_LABEL}</div>
+                  <div style={{ fontSize: 12, color: "var(--rns-ink-faint)", marginTop: 2 }}>
+                    {DELIVERY_ESTIMATE_TEXT} for every order, no matter the address.
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Payment method */}
+            {/* Payment method — online only, no COD, no pay-later */}
             <div className="rns-card" style={{ padding: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon name="creditCard" size={16} style={{ color: "var(--rns-ink-soft)" }} />
@@ -376,36 +362,25 @@ export default function CheckoutPage() {
                   Payment method
                 </h2>
               </div>
-              <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-                {[
-                  { id: "online", label: "Pay online", body: "UPI, cards, and net banking via Razorpay" },
-                  { id: "cod", label: "Cash on delivery", body: "Pay when your order arrives" },
-                ].map((opt) => (
-                  <label
-                    key={opt.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 10,
-                      border: `1px solid ${paymentMethod === opt.id ? "var(--rns-ink)" : "var(--rns-line)"}`,
-                      borderRadius: "var(--rns-r-sm)",
-                      padding: "12px 14px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === opt.id}
-                      onChange={() => setPaymentMethod(opt.id)}
-                      style={{ marginTop: 3 }}
-                    />
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 500 }}>{opt.label}</div>
-                      <div style={{ fontSize: 12, color: "var(--rns-ink-faint)", marginTop: 2 }}>{opt.body}</div>
-                    </div>
-                  </label>
-                ))}
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                  border: "1px solid var(--rns-ink)",
+                  borderRadius: "var(--rns-r-sm)",
+                  padding: "12px 14px",
+                }}
+              >
+                <Icon name="shield" size={16} style={{ color: "var(--rns-ink-soft)", marginTop: 2 }} />
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>Pay online</div>
+                  <div style={{ fontSize: 12, color: "var(--rns-ink-faint)", marginTop: 2 }}>
+                    UPI, cards, and net banking via Razorpay. Cash on delivery isn't available — your
+                    order is placed only once payment is confirmed.
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -533,7 +508,7 @@ export default function CheckoutPage() {
                 </div>
                 {deliveryFee > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--rns-ink-soft)" }}>{deliveryOption.label}</span>
+                    <span style={{ color: "var(--rns-ink-soft)" }}>{DELIVERY_ESTIMATE_LABEL}</span>
                     <span>{formatINR(deliveryFee)}</span>
                   </div>
                 )}
@@ -577,7 +552,7 @@ export default function CheckoutPage() {
                 className="rns-btn rns-btn--primary"
                 style={{ width: "100%", justifyContent: "center", marginTop: 20, opacity: placing ? 0.7 : 1 }}
               >
-                {placing ? "Placing order..." : paymentMethod === "cod" ? "Place order" : "Continue to payment"}
+                {placing ? "Placing order..." : "Continue to payment"}
               </button>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 12, color: "var(--rns-ink-faint)" }}>

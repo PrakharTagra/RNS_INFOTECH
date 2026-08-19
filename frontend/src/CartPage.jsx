@@ -23,8 +23,9 @@ function formatINR(n) {
  * The cart only ever holds products — no address or payment method
  * lives here. "Checkout" hands the current cart items off to
  * CheckoutPage (the shared order-details step used by both the cart
- * and "Order now"), which is where address, delivery date, and
- * payment happen.
+ * and "Order now"), which is where address and online payment happen
+ * (delivery is fixed for every order — 8-10 days — so it's not a
+ * choice made here or there).
  */
 export default function CartPage() {
   const { items, itemCount, subtotal, savings, removeItem, setQty } = useCart();

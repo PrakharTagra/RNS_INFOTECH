@@ -216,15 +216,6 @@ export default function PaymentPage() {
               <Icon name="shield" size={15} />
               Pay {formatINR(order.total)}
             </button>
-
-            <div style={{ textAlign: "center", marginTop: 12 }}>
-              <Link
-                to={`/orders/${order.id}`}
-                style={{ background: "none", border: "none", fontSize: 12.5, color: "var(--rns-ink-faint)", cursor: "pointer" }}
-              >
-                Pay later from your orders
-              </Link>
-            </div>
           </div>
         )}
 

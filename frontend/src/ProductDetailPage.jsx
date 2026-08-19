@@ -585,7 +585,7 @@ export default function ProductDetailPage() {
               }}
             >
               {[
-                { icon: "truck", label: "Fast dispatch", body: "2–3 working days" },
+                { icon: "truck", label: "Delivery", body: "8-10 days" },
                 { icon: "shield", label: "100% genuine", body: "Authorized dealer" },
                 { icon: "refresh", label: "Easy returns", body: "7-day return window" },
               ].map((t) => (

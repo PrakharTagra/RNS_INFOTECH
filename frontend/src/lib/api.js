@@ -260,7 +260,8 @@ export function normalizeOrder(order = {}) {
       country: shipping.country || "India",
       gstin: shipping.gstin || "",
     },
-    paymentMethod: order.paymentMethod || (order.paymentStatus === "paid" ? "Online payment" : "Cash on delivery"),
+    // Online payment only — COD no longer exists, so there's nothing else this could be.
+    paymentMethod: order.paymentMethod || "Online payment",
     paymentStatus: order.paymentStatus || "unpaid",
     status: order.status || "pending",
     trackingId: order.trackingId || null,
