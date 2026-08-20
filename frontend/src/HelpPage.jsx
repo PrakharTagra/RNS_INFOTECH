@@ -9,7 +9,7 @@ import SEO from "./components/SEO";
 import FAQs from "./components/FAQs";
 import { useLiveChat } from "./context/LiveChatContext";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { useSiteSettings } from "./context/SiteSettingsContext";
 import { getFaqContent } from "./lib/contentApi";
 import { submitLead } from "./lib/api";
@@ -94,7 +94,7 @@ export default function HelpPage() {
         title="Help & support"
         description="Reach the RNS INFOTECH team by email or live chat, or browse answers to common questions."
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

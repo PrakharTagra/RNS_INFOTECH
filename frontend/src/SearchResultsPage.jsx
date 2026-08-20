@@ -7,7 +7,7 @@ import Footer from "./components/Footer";
 import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { searchSite, useSearchIndex, TYPE_LABELS } from "./lib/search";
 
 const TYPE_ORDER = ["product", "category", "service", "faq", "page"];
@@ -98,7 +98,7 @@ export default function SearchResultsPage() {
         }
         noindex
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

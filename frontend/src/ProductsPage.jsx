@@ -15,7 +15,7 @@ import { EmptyState, ErrorState } from "./components/ui/Stateviews";
 import { useDebounce } from "./hooks/useDebounce";
 import { apiRequest, normalizeProduct } from "./lib/api";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 const PAGE_SIZE = 9;
 
@@ -328,7 +328,7 @@ export default function ProductsPage() {
         description="Browse RNS INFOTECH's full catalogue of pen tablets, pen displays, and stylus hardware — filter by category, price, and availability."
       />
 
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingTop: 36, paddingBottom: 36 }}>

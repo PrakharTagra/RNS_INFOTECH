@@ -9,7 +9,7 @@ import Icon from "./components/Icon";
 import { useOrders, getOrderStatus, canDownloadInvoice } from "./context/OrdersContext";
 import { downloadInvoice } from "./lib/invoice";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { ErrorState } from "./components/ui/Stateviews";
 
 function formatINR(n) {
@@ -56,7 +56,7 @@ export default function OrdersPage() {
   return (
     <>
       <SEO title="Your orders" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

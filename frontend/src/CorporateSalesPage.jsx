@@ -10,7 +10,7 @@ import Icon from "./components/Icon";
 import { SectionHeader } from "./components/SectionHeader";
 import Reveal from "./components/ui/Reveal";
 
-import { announcement, nav, footer, corporateSales } from "./data/siteData";
+import { nav, footer, corporateSales } from "./data/siteData";
 
 /**
  * CorporateSalesPage — the marketing/value-prop page "Corporate sales"
@@ -26,7 +26,7 @@ export default function CorporateSalesPage() {
         title="Corporate & Bulk Sales"
         description="Volume pricing, GST invoicing, and a dedicated account contact for studios, offices, and institutions buying pen tablets and displays in bulk from RNS INFOTECH."
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

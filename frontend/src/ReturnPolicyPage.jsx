@@ -5,7 +5,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { getPolicyContent } from "./lib/contentApi";
 import { ErrorState } from "./components/ui/Stateviews";
 
@@ -34,7 +34,7 @@ export default function ReturnPolicyPage() {
   return (
     <>
       <SEO title="Returns & product support" description="Our approach to returns and refunds, and how to reach RNS INFOTECH directly if there's an issue with your product." />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 8 }}>

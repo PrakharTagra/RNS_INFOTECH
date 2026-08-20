@@ -9,7 +9,7 @@ import SEO from "./components/SEO";
 import Breadcrumbs, { buildBreadcrumbJsonLd } from "./components/ui/Breadcrumbs";
 import { EmptyState, ErrorState } from "./components/ui/Stateviews";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { getBlogContent, getBlogPostContent } from "./lib/contentApi";
 
 function formatDate(iso) {
@@ -77,7 +77,7 @@ export default function BlogPostPage() {
     return (
       <>
         <SEO title="Post not found" noindex />
-        <AnnouncementBar {...announcement} />
+        <AnnouncementBar />
         <Navbar {...nav} />
         <section className="rns-container" style={{ padding: "64px 24px" }}>
           {notFound ? <EmptyState icon="fileText" title="Post not found" message="This post may have been moved or removed." action={{ label: "Back to blog", href: "/blog" }} /> : <ErrorState message={loadError?.message} action={{ label: "Retry", onClick: () => window.location.reload() }} />}
@@ -107,7 +107,7 @@ export default function BlogPostPage() {
   return (
     <>
       <SEO title={post.title} description={post.excerpt} image={post.coverImage} jsonLd={jsonLd} />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <div className="rns-container" style={{ paddingTop: 22 }}>

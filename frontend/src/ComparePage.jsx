@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import AnnouncementBar from "./components/AnnouncementBar";
@@ -9,7 +9,8 @@ import Button from "./components/Button";
 import SEO from "./components/SEO";
 import { EmptyState } from "./components/ui/Stateviews";
 
-import { announcement, nav, footer, products } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
+import { apiRequest, normalizeProduct } from "./lib/api";
 import { useCompare } from "./context/CompareContext";
 import { useCart } from "./context/CartContext";
 import { useToast } from "./context/ToastContext";
@@ -25,8 +26,9 @@ function formatINR(n) {
  * `useCompare().items` only stores a small snapshot per product
  * (id/name/image/price/mrp/category/categoryId/brand — enough for
  * ProductCard's toggle button to work without importing the full catalogue).
- * That's not enough for a *useful* comparison, so this page looks each
- * item up in `products` by id to pull full specs/stock/rating. If a
+ * That's not enough for a *useful* comparison (no specs/stock/rating), so
+ * this page fetches each item's full record live from GET /products/:id
+ * (the catalogue endpoint accepts either a slug or a Mongo _id). If a
  * product was ever removed from the catalogue, the stored snapshot is
  * used as a fallback so the compare list doesn't just silently drop it.
  */
@@ -34,10 +36,28 @@ export default function ComparePage() {
   const { items, removeCompare, clearCompare } = useCompare();
   const { addItem } = useCart();
   const toast = useToast();
+  const [liveById, setLiveById] = useState({});
+
+  useEffect(() => {
+    let ignore = false;
+    Promise.all(
+      items.map((item) =>
+        apiRequest(`/products/${encodeURIComponent(item.id)}`)
+          .then((res) => [item.id, normalizeProduct(res.product)])
+          .catch(() => null)
+      )
+    ).then((entries) => {
+      if (ignore) return;
+      setLiveById(Object.fromEntries(entries.filter(Boolean)));
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [items]);
 
   const rows = useMemo(
-    () => items.map((item) => products.find((p) => p.id === item.id) || item),
-    [items]
+    () => items.map((item) => liveById[item.id] || item),
+    [items, liveById]
   );
 
   // Union of every compared product's spec labels, in first-seen order,
@@ -66,7 +86,7 @@ export default function ComparePage() {
   return (
     <>
       <SEO title="Compare products" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

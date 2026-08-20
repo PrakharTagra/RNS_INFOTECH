@@ -9,14 +9,9 @@ import SEO from "./components/SEO";
 import { EmptyState, ErrorState } from "./components/ui/Stateviews";
 import { useDebounce } from "./hooks/useDebounce";
 
-import { announcement, nav, footer, categories } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { getBlogContent } from "./lib/contentApi";
-
-const FILTERS = [
-  { id: "all", label: "All posts" },
-  ...categories.map((c) => ({ id: c.id, label: c.name })),
-  { id: "guides", label: "Guides" },
-];
+import { apiRequest } from "./lib/api";
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
@@ -84,10 +79,32 @@ export default function BlogPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const search = useDebounce(searchInput, 250);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     getBlogContent().then(setBlogPosts).catch(setBlogError);
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    apiRequest("/categories")
+      .then((res) => {
+        if (!ignore) setCategories(res?.items || []);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const filters = useMemo(
+    () => [
+      { id: "all", label: "All posts" },
+      ...categories.map((c) => ({ id: c.slug || c._id, label: c.name })),
+      { id: "guides", label: "Guides" },
+    ],
+    [categories]
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -126,7 +143,7 @@ export default function BlogPage() {
         description="Buying guides and setup tips for pen tablets, pen displays, and stylus hardware from RNS INFOTECH."
         jsonLd={jsonLd}
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>
@@ -144,7 +161,7 @@ export default function BlogPage() {
       <section className="rns-container" style={{ paddingBottom: 20 }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {FILTERS.map((f) => (
+            {filters.map((f) => (
               <button
                 key={f.id}
                 type="button"

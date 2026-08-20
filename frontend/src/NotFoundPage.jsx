@@ -7,7 +7,7 @@ import Footer from "./components/Footer";
 import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 /**
  * NotFoundPage — catch-all route ("*") for any unmatched URL.
@@ -16,7 +16,7 @@ export default function NotFoundPage() {
   return (
     <>
       <SEO title="Page not found" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section

@@ -13,7 +13,7 @@ import { useAuth } from "./context/AuthContext";
 import { useOrders } from "./context/OrdersContext";
 import { useCart } from "./context/CartContext";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 /**
  * ProfilePage — the Amazon-style account hub: who you are (with an
@@ -57,7 +57,7 @@ export default function ProfilePage() {
   return (
     <>
       <SEO title="Your profile" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

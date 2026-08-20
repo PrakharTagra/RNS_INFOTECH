@@ -11,7 +11,7 @@ import AuthField from "./components/AuthField";
 import { useAuth } from "./context/AuthContext";
 import { isValidEmail, isPasswordValid } from "./lib/authValidation";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 const EMPTY = { name: "", email: "", phone: "", password: "", confirm: "" };
 
@@ -65,7 +65,7 @@ export default function SignupPage() {
   return (
     <>
       <SEO title="Sign up" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section">

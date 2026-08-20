@@ -6,7 +6,7 @@ import Footer from "./components/Footer";
 import CTASection from "./components/CTASection";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { useSiteSettings } from "./context/SiteSettingsContext";
 import { getPolicyContent } from "./lib/contentApi";
 import { ErrorState } from "./components/ui/Stateviews";
@@ -41,7 +41,7 @@ export default function WarrantyPage() {
         title="Warranty"
         description="Warranty coverage and claim process for pen displays, pen tablets, stylus pens, and accessories sold by RNS INFOTECH."
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 8 }}>

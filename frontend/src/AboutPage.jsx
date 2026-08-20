@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import AnnouncementBar from "./components/AnnouncementBar";
@@ -9,20 +9,37 @@ import SEO from "./components/SEO";
 import WhyChooseUs from "./components/WhyChooseUs";
 import Testimonials from "./components/Testimonials";
 import { SectionHeader, Trace } from "./components/SectionHeader";
+import { apiRequest } from "./lib/api";
 
-import { announcement, nav, footer, about, hero, whyChooseUs, testimonials } from "./data/siteData";
+import { nav, footer, about } from "./data/siteData";
 
 /**
- * AboutPage — the brand story. Reuses WhyChooseUs /
- * Testimonials rather than rebuilding them, so this page stays in
- * sync with the same content shown on the homepage instead of
- * drifting into a second copy of "why choose us".
+ * AboutPage — the brand story. Reuses WhyChooseUs / Testimonials rather
+ * than rebuilding them, so this page stays in sync with the same
+ * content shown on the homepage instead of drifting into a second copy
+ * of "why choose us" — both now pulled live from GET /website, same as
+ * HomePage. `about` (intro/story/values copy) has no backend content
+ * model yet, so it stays static.
  */
 export default function AboutPage() {
+  const [website, setWebsite] = useState({ hero: null, whyChooseUs: [], testimonials: [] });
+
+  useEffect(() => {
+    let ignore = false;
+    apiRequest("/website")
+      .then((res) => {
+        if (!ignore) setWebsite(res?.website || { hero: null, whyChooseUs: [], testimonials: [] });
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   return (
     <>
       <SEO title="About us" description={about.intro} />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       {/* Intro */}
@@ -37,23 +54,25 @@ export default function AboutPage() {
             {about.intro}
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 32,
-              marginTop: 28,
-              paddingTop: 22,
-              borderTop: "1px solid var(--rns-line)",
-              flexWrap: "wrap",
-            }}
-          >
-            {hero.stats.map((s) => (
-              <div key={s.label}>
-                <div style={{ fontFamily: "var(--rns-font-display)", fontSize: 26, fontWeight: 700 }}>{s.value}</div>
-                <div style={{ fontSize: 13, color: "var(--rns-ink-faint)", marginTop: 4 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+          {website.hero?.stats && (
+            <div
+              style={{
+                display: "flex",
+                gap: 32,
+                marginTop: 28,
+                paddingTop: 22,
+                borderTop: "1px solid var(--rns-line)",
+                flexWrap: "wrap",
+              }}
+            >
+              {website.hero.stats.map((s) => (
+                <div key={s.label}>
+                  <div style={{ fontFamily: "var(--rns-font-display)", fontSize: 26, fontWeight: 700 }}>{s.value}</div>
+                  <div style={{ fontSize: 13, color: "var(--rns-ink-faint)", marginTop: 4 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         </div>
       </section>
@@ -104,8 +123,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <WhyChooseUs items={whyChooseUs} />
-      <Testimonials items={testimonials} />
+      <WhyChooseUs items={website.whyChooseUs} />
+      <Testimonials items={website.testimonials} />
 
       {/* CTA */}
       <section className="rns-container" style={{ padding: "8px 24px 64px" }}>

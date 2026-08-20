@@ -8,7 +8,7 @@ import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 import { SectionHeader } from "./components/SectionHeader";
 
-import { announcement, nav, footer, requestQuote } from "./data/siteData";
+import { nav, footer, requestQuote } from "./data/siteData";
 import { useSiteSettings } from "./context/SiteSettingsContext";
 import { submitLead } from "./lib/api";
 import { useToast } from "./context/ToastContext";
@@ -70,7 +70,7 @@ export default function RequestQuotePage() {
   return (
     <>
       <SEO title={requestQuote.title} description={requestQuote.subtitle} />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

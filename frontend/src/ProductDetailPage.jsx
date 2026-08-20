@@ -15,7 +15,7 @@ import { useCompare } from "./context/CompareContext";
 import { useToast } from "./context/ToastContext";
 import { useAuth } from "./context/AuthContext";
 
-import { announcement, nav, footer, downloads } from "./data/siteData";
+import { nav, footer, downloads } from "./data/siteData";
 import { useSiteSettings } from "./context/SiteSettingsContext";
 import { apiRequest, normalizeProduct, normalizeReview } from "./lib/api";
 
@@ -203,12 +203,12 @@ export default function ProductDetailPage() {
 
   if (!loading && !product) {
     if (loadError && loadError.status !== 404) {
-      return (<><SEO title="Unable to load product" noindex /><AnnouncementBar {...announcement} /><Navbar {...nav} /><section className="rns-section"><div className="rns-container" style={{ padding: "60px 0" }}><ErrorState message={loadError.message} /></div></section><Footer logo={nav.logo} {...footer} /></>);
+      return (<><SEO title="Unable to load product" noindex /><AnnouncementBar /><Navbar {...nav} /><section className="rns-section"><div className="rns-container" style={{ padding: "60px 0" }}><ErrorState message={loadError.message} /></div></section><Footer logo={nav.logo} {...footer} /></>);
     }
     return (
       <>
         <SEO title="Product not found" noindex />
-        <AnnouncementBar {...announcement} />
+        <AnnouncementBar />
         <Navbar {...nav} />
         <section className="rns-section">
           <div className="rns-container" style={{ textAlign: "center", padding: "60px 0" }}>
@@ -230,7 +230,7 @@ export default function ProductDetailPage() {
     return (
       <>
         <SEO title="Loading product" noindex />
-        <AnnouncementBar {...announcement} />
+        <AnnouncementBar />
         <Navbar {...nav} />
         <section className="rns-section">
           <div className="rns-container" style={{ padding: "60px 0", textAlign: "center" }}>
@@ -349,7 +349,7 @@ export default function ProductDetailPage() {
         image={images[0]}
         jsonLd={jsonLd}
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       {/* Breadcrumb */}

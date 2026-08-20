@@ -8,7 +8,7 @@ import SEO from "./components/SEO";
 import Icon from "./components/Icon";
 import { useAuth } from "./context/AuthContext";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 const RESEND_COOLDOWN_S = 30;
 
@@ -57,7 +57,7 @@ export default function VerifyEmailPage() {
     return (
       <>
         <SEO title="No verification in progress" noindex />
-        <AnnouncementBar {...announcement} />
+        <AnnouncementBar />
         <Navbar {...nav} />
         <section className="rns-section">
           <div className="rns-container" style={{ textAlign: "center", padding: "60px 0" }}>
@@ -116,7 +116,7 @@ export default function VerifyEmailPage() {
   return (
     <>
       <SEO title="Verify email" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section">

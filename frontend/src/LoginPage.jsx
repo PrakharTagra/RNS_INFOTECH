@@ -8,7 +8,7 @@ import SEO from "./components/SEO";
 import AuthField from "./components/AuthField";
 import { useAuth } from "./context/AuthContext";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -39,7 +39,7 @@ export default function LoginPage() {
   return (
     <>
       <SEO title="Log in" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section">

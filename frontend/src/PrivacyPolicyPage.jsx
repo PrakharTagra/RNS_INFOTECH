@@ -5,7 +5,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { getPolicyContent } from "./lib/contentApi";
 import { ErrorState } from "./components/ui/Stateviews";
 
@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
   return (
     <>
       <SEO title="Privacy policy" description="What information RNS INFOTECH collects when you use this site, how it's used, and your choices." />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 8 }}>

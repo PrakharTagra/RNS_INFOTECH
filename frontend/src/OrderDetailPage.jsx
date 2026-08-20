@@ -11,7 +11,7 @@ import { useOrders, getOrderStatus, getTrackingInfo, canDownloadInvoice } from "
 import { downloadInvoice } from "./lib/invoice";
 import { ErrorState } from "./components/ui/Stateviews";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 function formatINR(n) {
   return "₹" + n.toLocaleString("en-IN");
@@ -57,7 +57,7 @@ export default function OrderDetailPage() {
       return (
         <>
           <SEO title="Unable to load order" noindex />
-          <AnnouncementBar {...announcement} />
+          <AnnouncementBar />
           <Navbar {...nav} />
           <section className="rns-section"><div className="rns-container" style={{ padding: "60px 0" }}><ErrorState message={loadError.message} /></div></section>
           <Footer logo={nav.logo} {...footer} />
@@ -67,7 +67,7 @@ export default function OrderDetailPage() {
     return (
       <>
         <SEO title="Order not found" noindex />
-        <AnnouncementBar {...announcement} />
+        <AnnouncementBar />
         <Navbar {...nav} />
         <section className="rns-section">
           <div className="rns-container" style={{ textAlign: "center", padding: "60px 0" }}>
@@ -92,7 +92,7 @@ export default function OrderDetailPage() {
   return (
     <>
       <SEO title="Order details" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <div className="rns-container" style={{ paddingTop: 22 }}>

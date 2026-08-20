@@ -18,11 +18,7 @@ import { Trace } from "./components/SectionHeader";
 import { apiRequest, getHomepageProducts } from "./lib/api";
 import { getFaqContent } from "./lib/contentApi";
 
-import {
-  announcement,
-  nav,
-  footer,
-} from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 const ORGANIZATION_JSON_LD = {
   "@context": "https://schema.org",
@@ -88,7 +84,7 @@ export default function HomePage() {
         description="RNS INFOTECH is an authorized dealer of pen tablets, pen displays, and stylus hardware — genuine products, manufacturer warranty, and fast dispatch for artists, studios, and businesses."
         jsonLd={ORGANIZATION_JSON_LD}
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
       {website.hero && <Hero {...website.hero} />}
 

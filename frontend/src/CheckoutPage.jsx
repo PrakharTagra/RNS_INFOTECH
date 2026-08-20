@@ -13,7 +13,7 @@ import { useAddresses } from "./context/AddressContext";
 import { DELIVERY_ESTIMATE_LABEL, DELIVERY_ESTIMATE_TEXT } from "./lib/delivery";
 import { getCheckoutQuote } from "./lib/api";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 function formatINR(n) {
   return "₹" + n.toLocaleString("en-IN");
@@ -113,7 +113,7 @@ export default function CheckoutPage() {
     return (
       <>
         <SEO title="Nothing to check out" noindex />
-        <AnnouncementBar {...announcement} />
+        <AnnouncementBar />
         <Navbar {...nav} />
         <section className="rns-section">
           <div className="rns-container" style={{ textAlign: "center", padding: "60px 0" }}>
@@ -231,7 +231,7 @@ export default function CheckoutPage() {
   return (
     <>
       <SEO title="Checkout" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

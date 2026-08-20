@@ -5,7 +5,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { getPolicyContent } from "./lib/contentApi";
 import { ErrorState } from "./components/ui/Stateviews";
 
@@ -32,7 +32,7 @@ export default function TermsPage() {
   return (
     <>
       <SEO title="Terms & conditions" description="The terms that govern use of the RNS INFOTECH website and any orders placed through it." />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 8 }}>

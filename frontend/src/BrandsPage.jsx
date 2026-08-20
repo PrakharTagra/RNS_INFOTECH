@@ -7,7 +7,7 @@ import Footer from "./components/Footer";
 import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 
-import { announcement, nav, footer, brands } from "./data/siteData";
+import { nav, footer, brands } from "./data/siteData";
 
 function BrandCard({ name, logo }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -87,7 +87,7 @@ export default function BrandsPage() {
         title="Brands we carry"
         description="Every RNS INFOTECH unit is sourced through authorized brand channels, with warranty claims handled directly by our own team."
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

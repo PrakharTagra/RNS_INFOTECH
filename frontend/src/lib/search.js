@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { solutions, faqs } from "../data/siteData";
 import { apiRequest, normalizeProduct } from "./api";
+import { getFaqContent } from "./contentApi";
 
 // Pages that aren't otherwise represented in the catalogue data but
 // are still reasonable things to land on from a site-wide search.
@@ -45,45 +45,39 @@ export const TYPE_LABELS = {
   page: "Pages",
 };
 
-// Static (non-catalogue) part of the index — solutions, FAQs, and misc
-// pages. These aren't backed by an API, so they stay as site copy.
+// Static (non-catalogue, non-API) part of the index — just internal
+// page links with no live data source.
 function buildStaticIndex() {
-  const items = [];
+  return STATIC_PAGES.map((pg, i) => ({
+    type: "page",
+    id: `page-${i}`,
+    title: pg.title,
+    subtitle: pg.subtitle,
+    href: pg.href,
+    keywords: pg.keywords,
+  }));
+}
 
-  solutions.forEach((s, i) => {
-    items.push({
-      type: "service",
-      id: `solution-${i}`,
-      title: s.title,
-      subtitle: s.body,
-      href: "/#solutions",
-      keywords: `${s.title} ${s.body}`.toLowerCase(),
-    });
-  });
+function solutionToItem(s, i) {
+  return {
+    type: "service",
+    id: `solution-${i}`,
+    title: s.title,
+    subtitle: s.body,
+    href: "/#solutions",
+    keywords: `${s.title} ${s.body}`.toLowerCase(),
+  };
+}
 
-  faqs.forEach((f, i) => {
-    items.push({
-      type: "faq",
-      id: `faq-${i}`,
-      title: f.q,
-      subtitle: f.a,
-      href: "/help#faqs",
-      keywords: `${f.q} ${f.a}`.toLowerCase(),
-    });
-  });
-
-  STATIC_PAGES.forEach((pg, i) => {
-    items.push({
-      type: "page",
-      id: `page-${i}`,
-      title: pg.title,
-      subtitle: pg.subtitle,
-      href: pg.href,
-      keywords: pg.keywords,
-    });
-  });
-
-  return items;
+function faqToItem(f, i) {
+  return {
+    type: "faq",
+    id: `faq-${i}`,
+    title: f.q,
+    subtitle: f.a,
+    href: "/help#faqs",
+    keywords: `${f.q} ${f.a}`.toLowerCase(),
+  };
 }
 
 function productToItem(raw) {
@@ -112,10 +106,10 @@ function categoryToItem(c) {
   };
 }
 
-// Catalogue (products + categories) comes from the live API. It's
-// fetched once, cached at module scope, and shared by every caller
-// (the navbar search-as-you-type dropdown and the full results page)
-// so we don't refetch the whole catalogue on every keystroke.
+// Catalogue (products + categories) plus solutions + FAQs all come from
+// live APIs. Fetched once, cached at module scope, and shared by every
+// caller (the navbar search-as-you-type dropdown and the full results
+// page) so we don't refetch on every keystroke.
 let catalogItems = null;
 let catalogPromise = null;
 
@@ -124,11 +118,15 @@ function loadCatalogIndex() {
   catalogPromise = Promise.all([
     apiRequest("/categories").catch(() => ({ items: [] })),
     apiRequest("/products?page=1&limit=200").catch(() => ({ items: [] })),
+    apiRequest("/website").catch(() => ({ website: { solutions: [] } })),
+    getFaqContent().catch(() => []),
   ])
-    .then(([categoriesRes, productsRes]) => {
+    .then(([categoriesRes, productsRes, websiteRes, faqsRes]) => {
       catalogItems = [
         ...(productsRes?.items || []).map(productToItem),
         ...(categoriesRes?.items || []).map(categoryToItem),
+        ...(websiteRes?.website?.solutions || []).map(solutionToItem),
+        ...(faqsRes || []).map(faqToItem),
       ];
       return catalogItems;
     })

@@ -8,7 +8,7 @@ import SEO from "./components/SEO";
 import Icon from "./components/Icon";
 import { useCart } from "./context/CartContext";
 
-import { announcement, nav, footer } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 function formatINR(n) {
   return "₹" + n.toLocaleString("en-IN");
@@ -41,7 +41,7 @@ export default function CartPage() {
   return (
     <>
       <SEO title="Your cart" noindex />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>

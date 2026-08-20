@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import AnnouncementBar from "./components/AnnouncementBar";
 import Navbar from "./components/Navbar";
@@ -7,14 +7,9 @@ import Icon from "./components/Icon";
 import SEO from "./components/SEO";
 import { EmptyState } from "./components/ui/Stateviews";
 import { useDebounce } from "./hooks/useDebounce";
+import { apiRequest } from "./lib/api";
 
-import { announcement, nav, footer, downloads, categories } from "./data/siteData";
-
-const FILTERS = [
-  { id: "all", label: "All downloads" },
-  { id: "universal", label: "Universal" },
-  ...categories.map((c) => ({ id: c.id, label: c.name })),
-];
+import { nav, footer, downloads } from "./data/siteData";
 
 /**
  * DownloadsPage — standalone listing of every entry in the `downloads`
@@ -23,11 +18,38 @@ const FILTERS = [
  * already shows the per-product subset (category + universal); this page
  * is the full catalogue for someone who just needs a driver and doesn't
  * want to hunt through a product page to find it.
+ *
+ * Category filter tabs come from the live catalogue (GET /categories)
+ * rather than the mock category list, so they stay in sync with
+ * whatever categories actually exist. `downloads` itself has no
+ * backend content model yet, so the list of files stays static.
  */
 export default function DownloadsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const search = useDebounce(searchInput, 250);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    let ignore = false;
+    apiRequest("/categories")
+      .then((res) => {
+        if (!ignore) setCategories(res?.items || []);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const filters = useMemo(
+    () => [
+      { id: "all", label: "All downloads" },
+      { id: "universal", label: "Universal" },
+      ...categories.map((c) => ({ id: c.slug || c._id, label: c.name })),
+    ],
+    [categories]
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -60,7 +82,7 @@ export default function DownloadsPage() {
         description="Drivers, manuals, and setup guides for RNS INFOTECH pen displays, pen tablets, stylus pens, and accessories."
         jsonLd={jsonLd}
       />
-      <AnnouncementBar {...announcement} />
+      <AnnouncementBar />
       <Navbar {...nav} />
 
       <section className="rns-section" style={{ paddingBottom: 12 }}>
@@ -79,7 +101,7 @@ export default function DownloadsPage() {
       <section className="rns-container" style={{ paddingBottom: 20 }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {FILTERS.map((f) => (
+            {filters.map((f) => (
               <button
                 key={f.id}
                 type="button"
