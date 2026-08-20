@@ -273,16 +273,16 @@ export function normalizeOrder(order = {}) {
 }
 
 export function normalizeReview(review = {}) {
+  const user = review.user && typeof review.user === "object" ? review.user : null;
   return {
     id: review._id || review.id,
     rating: Number(review.rating || 0),
     comment: review.comment || "",
     createdAt: review.createdAt || null,
-    // The API never returns the reviewer's name (no populate on the
-    // storefront-backend side — see review.controller.js), so every
-    // review the storefront reads back is shown as a verified buyer
-    // rather than by name.
-    user: review.user || null,
+    // Reviews are public and unmoderated (see review.controller.js) —
+    // the API populates only the reviewer's name, never email or any
+    // other account detail.
+    reviewerName: user?.name || "Anonymous",
   };
 }
 

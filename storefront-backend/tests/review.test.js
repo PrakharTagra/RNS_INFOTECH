@@ -33,7 +33,7 @@ describe("POST /api/products/:productId/reviews", () => {
     expect(res.status).toBe(404);
   });
 
-  it("creates a pending review for an existing product", async () => {
+  it("creates a review immediately (no pending status)", async () => {
     Product.findById.mockResolvedValue({ _id: "p1", name: "Wave Tablet" });
     Review.create.mockResolvedValue({
       _id: "r1",
@@ -41,7 +41,6 @@ describe("POST /api/products/:productId/reviews", () => {
       user: "user-123",
       rating: 5,
       comment: "Great tablet",
-      status: "pending",
     });
 
     const res = await request(app)
@@ -56,7 +55,6 @@ describe("POST /api/products/:productId/reviews", () => {
         user: "user-123",
         rating: 5,
         comment: "Great tablet",
-        status: "pending",
       })
     );
   });

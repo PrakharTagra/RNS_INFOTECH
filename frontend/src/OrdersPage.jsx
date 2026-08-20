@@ -174,6 +174,25 @@ export default function OrdersPage() {
                       {itemCount} item{itemCount === 1 ? "" : "s"} · {order.paymentMethod}
                     </div>
 
+                    {/* Review prompts only make sense once the order has
+                        actually shipped — matches OrderDetailPage's item
+                        list, which shows the same links. */}
+                    {status.isShipped && (
+                      <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                        {order.items.map((item) => (
+                          <Link
+                            key={`review-${item.id}`}
+                            to={`/products/${item.id}#reviews`}
+                            className="rns-btn rns-btn--ghost"
+                            style={{ fontSize: 12.5, padding: "6px 12px" }}
+                          >
+                            <Icon name="star" size={13} />
+                            Review {item.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
                     <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
                       {/* No "Pay now" branch — GET /orders hard-filters
                           on paymentVerifiedAt, so every order listed here

@@ -2,21 +2,12 @@ import PermissionBoundary from "../../components/PermissionBoundary";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../components/Icon";
-import Badge from "../../components/Badge";
 import EmptyState from "../../components/EmptyState";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import Toast from "../../components/Toast";
 import StatCard from "../../components/StatCard";
 import useToast from "../../hooks/useToast";
-import { STATUS_TONE, statusLabel } from "../../utils/format";
-import { getReviews, getReviewStats, setReviewStatus, deleteReview } from "../../services/reviewsService";
-
-const TABS = [
-  { key: "pending", label: "Pending" },
-  { key: "approved", label: "Approved" },
-  { key: "rejected", label: "Rejected" },
-  { key: "all", label: "All" },
-];
+import { getReviews, getReviewStats, deleteReview } from "../../services/reviewsService";
 
 function Stars({ rating }) {
   return (
@@ -28,19 +19,25 @@ function Stars({ rating }) {
   );
 }
 
+/**
+ * ReviewsListPage — reviews go live the moment a shopper submits them
+ * (see storefront-backend's review.controller.js), so there's no
+ * pending/approved/rejected queue to work through here. The admin can
+ * only browse what's live and delete anything inappropriate or spammy;
+ * deleting recomputes that product's rating automatically.
+ */
 export default function ReviewsListPage() {
   const { toast, showToast, clearToast } = useToast();
   const [reviews, setReviews] = useState(null);
   const [error, setError] = useState("");
   const [stats, setStats] = useState(null);
-  const [tab, setTab] = useState("pending");
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState(null);
 
-  async function load(statusFilter = tab) {
+  async function load() {
     setError("");
     try {
-      const [items, s] = await Promise.all([getReviews({ status: statusFilter }), getReviewStats()]);
+      const [items, s] = await Promise.all([getReviews(), getReviewStats()]);
       setReviews(items);
       setStats(s);
     } catch (err) {
@@ -50,15 +47,13 @@ export default function ReviewsListPage() {
   }
 
   useEffect(() => {
-    load(tab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+    load();
+  }, []);
 
   const filtered = useMemo(() => {
     if (!reviews) return [];
     const q = search.trim().toLowerCase();
     return reviews
-      .filter((r) => tab === "all" || r.status === tab)
       .filter(
         (r) =>
           !q ||
@@ -66,14 +61,8 @@ export default function ReviewsListPage() {
           r.customerName.toLowerCase().includes(q) ||
           r.comment.toLowerCase().includes(q)
       )
-      .sort((a, b) => a.status.localeCompare(b.status));
-  }, [reviews, tab, search]);
-
-  async function act(id, status) {
-    await setReviewStatus(id, status);
-    showToast(status === "approved" ? "Review approved" : "Review rejected");
-    load();
-  }
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+  }, [reviews, search]);
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -88,16 +77,14 @@ export default function ReviewsListPage() {
       <div className="admin-page-header">
         <div>
           <h1>Reviews</h1>
-          <p>Moderate product reviews. Approving or rejecting a review updates that product's rating automatically.</p>
+          <p>Reviews are visible on the site as soon as a customer submits them. Delete anything inappropriate or spammy — that's the only moderation available here.</p>
         </div>
       </div>
 
       {stats && (
         <div className="admin-stat-grid" style={{ marginBottom: 20 }}>
-          <StatCard label="Pending" value={stats.pending} icon="clock" />
-          <StatCard label="Approved" value={stats.approved} icon="check" />
-          <StatCard label="Rejected" value={stats.rejected} icon="close" />
-          <StatCard label="Total" value={stats.total} icon="star" />
+          <StatCard label="Total reviews" value={stats.total} icon="star" />
+          <StatCard label="Average rating" value={stats.averageRating ? stats.averageRating.toFixed(1) : "—"} icon="check" />
         </div>
       )}
 
@@ -111,27 +98,14 @@ export default function ReviewsListPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="admin-segmented admin-segmented--sm">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              className={`admin-segmented__btn${tab === t.key ? " is-active" : ""}`}
-              onClick={() => setTab(t.key)}
-            >
-              {t.label}
-              {stats && t.key !== "all" ? ` (${stats[t.key]})` : ""}
-            </button>
-          ))}
-        </div>
       </div>
 
       {error ? (
-        <div className="admin-card"><div style={{ color: "var(--admin-danger)", marginBottom: 12 }}>{error}</div><button className="admin-btn admin-btn--ghost" type="button" onClick={() => load(tab)}>Try again</button></div>
+        <div className="admin-card"><div style={{ color: "var(--admin-danger)", marginBottom: 12 }}>{error}</div><button className="admin-btn admin-btn--ghost" type="button" onClick={() => load()}>Try again</button></div>
       ) : reviews === null ? (
         <div className="admin-card">Loading reviews…</div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="star" title="No reviews here" description="Nothing matches this view right now." />
+        <EmptyState icon="star" title="No reviews yet" description="Reviews customers submit will show up here." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((r) => (
@@ -141,7 +115,6 @@ export default function ReviewsListPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <strong>{r.customerName}</strong>
                     <Stars rating={r.rating} />
-                    <Badge tone={STATUS_TONE[r.status]}>{statusLabel(r.status)}</Badge>
                   </div>
                   <div style={{ fontSize: 12.5, color: "var(--admin-ink-soft)", marginTop: 2 }}>
                     on{" "}
@@ -153,22 +126,6 @@ export default function ReviewsListPage() {
                   <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.55 }}>{r.comment}</p>
                 </div>
                 <div className="admin-table__actions" style={{ flexShrink: 0 }}>
-                  {r.status !== "approved" && (
-                    <button className="admin-icon-btn" type="button" aria-label="Approve" title="Approve" onClick={() => act(r.id, "approved")}>
-                      <Icon name="check" size={14} />
-                    </button>
-                  )}
-                  {r.status !== "rejected" && (
-                    <button
-                      className="admin-icon-btn admin-icon-btn--danger"
-                      type="button"
-                      aria-label="Reject"
-                      title="Reject"
-                      onClick={() => act(r.id, "rejected")}
-                    >
-                      <Icon name="close" size={14} />
-                    </button>
-                  )}
                   <button
                     className="admin-icon-btn admin-icon-btn--danger"
                     type="button"
@@ -195,4 +152,5 @@ export default function ReviewsListPage() {
       <Toast message={toast.message} tone={toast.tone} onClose={clearToast} />
     </div>
   </PermissionBoundary>
-  );}
+  );
+}

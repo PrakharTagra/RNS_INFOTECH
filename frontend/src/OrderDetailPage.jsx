@@ -331,6 +331,16 @@ export default function OrderDetailPage() {
                   <div style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", marginTop: 6 }}>
                     Qty {item.qty} × {formatINR(item.price)}
                   </div>
+                  {status.isShipped && (
+                    <Link
+                      to={`/products/${item.id}#reviews`}
+                      className="rns-btn rns-btn--ghost"
+                      style={{ fontSize: 12, padding: "5px 10px", marginTop: 8, display: "inline-flex" }}
+                    >
+                      <Icon name="star" size={12} />
+                      Write a review
+                    </Link>
+                  )}
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
                   {formatINR(item.price * item.qty)}

@@ -156,11 +156,14 @@ export default function ProductDetailPage() {
     setReviewError("");
     setReviewSubmitting(true);
     try {
-      await apiRequest(`/products/${encodeURIComponent(id)}/reviews`, {
+      const res = await apiRequest(`/products/${encodeURIComponent(id)}/reviews`, {
         method: "POST",
         body: { rating: reviewForm.rating, comment: reviewForm.comment.trim() },
         authRequired: true,
       });
+      if (res?.review) {
+        setLiveReviews((prev) => [normalizeReview(res.review), ...prev]);
+      }
       setReviewStatus("submitted");
       setReviewForm({ rating: 5, comment: "" });
     } catch (err) {
@@ -772,9 +775,9 @@ export default function ProductDetailPage() {
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <Icon name="check" size={16} style={{ color: "#0a7a58", marginTop: 2, flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>Thanks — your review is in</div>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>Thanks — your review is live</div>
                       <div style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", marginTop: 4 }}>
-                        It's queued for moderation and will appear here once approved.
+                        It's already visible below, no waiting on moderation.
                       </div>
                     </div>
                   </div>
@@ -855,7 +858,7 @@ export default function ProductDetailPage() {
                   <div key={r.id} className="rns-card" style={{ padding: 20, background: "var(--rns-bg)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>Verified buyer</div>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{r.reviewerName}</div>
                         <div style={{ marginTop: 4 }}>
                           <Stars rating={r.rating} size={12} />
                         </div>

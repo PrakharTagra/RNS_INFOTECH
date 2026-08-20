@@ -3,12 +3,14 @@ const Product = require("../models/Product");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 
-const REVIEW_STATUS = ["pending", "approved", "rejected"];
-
+// Reviews go live immediately — there's no moderation queue, so a
+// product's rating/reviewCount is just the aggregate over every review
+// it has (see admin-backend's mirror of this in review.controller.js,
+// which only adds the ability to delete a review, not approve one).
 async function updateProductRating(productId) {
-  const approvedReviews = (await Review.find({ product: productId, status: "approved" })) || [];
-  const reviewCount = Array.isArray(approvedReviews) ? approvedReviews.length : 0;
-  const rating = reviewCount === 0 ? 0 : Number((approvedReviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1));
+  const reviews = (await Review.find({ product: productId })) || [];
+  const reviewCount = Array.isArray(reviews) ? reviews.length : 0;
+  const rating = reviewCount === 0 ? 0 : Number((reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1));
 
   await Product.findByIdAndUpdate(productId, { rating, reviewCount });
 }
@@ -28,8 +30,9 @@ const create = asyncHandler(async (req, res) => {
     user: req.auth.userId,
     rating: req.body.rating,
     comment: req.body.comment || "",
-    status: "pending",
   });
+  await updateProductRating(productId);
+  if (typeof review.populate === "function") await review.populate("user", "name");
 
   res.status(201).json({ review });
 });
@@ -38,15 +41,18 @@ const listByProduct = asyncHandler(async (req, res) => {
   const { productId } = req.params;
   const { page, limit } = req.query;
 
+  // Public and unfiltered — every review shows here, and only the
+  // reviewer's name is populated (never email or anything else).
   const [items, total] = await Promise.all([
-    Review.find({ product: productId, status: "approved" })
+    Review.find({ product: productId })
+      .populate("user", "name")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
-    Review.countDocuments({ product: productId, status: "approved" }),
+    Review.countDocuments({ product: productId }),
   ]);
 
   res.json({ items, page, limit, total, totalPages: Math.ceil(total / limit) });
 });
 
-module.exports = { REVIEW_STATUS, create, listByProduct, updateProductRating };
+module.exports = { create, listByProduct, updateProductRating };

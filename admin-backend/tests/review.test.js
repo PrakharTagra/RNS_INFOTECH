@@ -36,19 +36,17 @@ describe("GET /api/reviews", () => {
   });
 });
 
-describe("PATCH /api/reviews/:id/status", () => {
-  it("approves a review and updates the product aggregate", async () => {
-    const save = jest.fn().mockResolvedValue(true);
-    Review.findById.mockResolvedValue({ _id: "r1", product: "p1", status: "pending", moderationNote: "", save });
+describe("DELETE /api/reviews/:id", () => {
+  it("deletes a review and updates the product aggregate", async () => {
+    const deleteOne = jest.fn().mockResolvedValue(true);
+    Review.findById.mockResolvedValue({ _id: "r1", product: "p1", deleteOne });
+    Review.find.mockResolvedValue([]);
     Product.findByIdAndUpdate.mockResolvedValue({ _id: "p1" });
 
-    const res = await request(app)
-      .patch("/api/reviews/r1/status")
-      .set("Authorization", authHeader)
-      .send({ status: "approved", moderationNote: "Looks good" });
+    const res = await request(app).delete("/api/reviews/r1").set("Authorization", authHeader);
 
-    expect(res.status).toBe(200);
-    expect(save).toHaveBeenCalled();
+    expect(res.status).toBe(204);
+    expect(deleteOne).toHaveBeenCalled();
     expect(Product.findByIdAndUpdate).toHaveBeenCalledWith("p1", expect.objectContaining({ rating: expect.any(Number), reviewCount: expect.any(Number) }));
   });
 });

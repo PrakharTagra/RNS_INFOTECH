@@ -1,12 +1,13 @@
 import { getDashboardSummary } from "./dashboardService";
 import { getOrders } from "./ordersService";
-import { getReviews } from "./reviewsService";
 
 // There's no notifications model/endpoint on admin-backend, so this
 // is computed client-side from data the existing services already
-// expose — low stock (dashboard summary), pending orders, and pending
-// reviews. "Read" state has nothing to persist against on the server,
-// so it's tracked locally instead.
+// expose — low stock (dashboard summary) and pending orders. Reviews
+// go live the moment a shopper submits them (no moderation queue —
+// see reviewsService.js), so they don't need a notification here.
+// "Read" state has nothing to persist against on the server, so it's
+// tracked locally instead.
 const DISMISSED_KEY = "admin_notifications_dismissed_v1";
 const MAX_PER_GROUP = 5;
 
@@ -61,10 +62,9 @@ function timeAgo(dateLike) {
  * source failing doesn't take down the whole panel.
  */
 export async function getNotifications() {
-  const [summary, pendingOrders, pendingReviews] = await Promise.all([
+  const [summary, pendingOrders] = await Promise.all([
     getDashboardSummary().catch(() => null),
     getOrders({ status: "pending" }).catch(() => []),
-    getReviews({ status: "pending" }).catch(() => []),
   ]);
 
   const items = [];
@@ -91,22 +91,6 @@ export async function getNotifications() {
       detail: `#${String(o.id).slice(-6).toUpperCase()} · ${o.customerEmail || "Customer"}`,
       href: `/orders/${o.id}`,
       at: o.date,
-    });
-  });
-
-  pendingReviews.slice(0, MAX_PER_GROUP).forEach((r) => {
-    // r.date is already a pre-formatted display string (see
-    // reviewsService.normalizeReview), not a parseable timestamp —
-    // show it as-is instead of running it through timeAgo().
-    items.push({
-      id: `review:${r.id}`,
-      icon: "star",
-      severity: "info",
-      title: "New review awaiting moderation",
-      detail: `${r.productName} · ${r.rating}★ from ${r.customerName}`,
-      href: "/reviews",
-      at: null,
-      timeLabelOverride: r.date || "",
     });
   });
 
