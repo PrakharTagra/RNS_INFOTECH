@@ -4,6 +4,13 @@ const Product = require("../models/Product");
 const SLUG_RE = /^[a-z0-9-]+$/;
 const OBJECT_ID_RE = /^[a-f0-9]{24}$/i;
 
+// Manufacturer-hosted driver/manual links (see models/Product.js) —
+// label + an absolute URL pointing at the original brand website.
+const downloadLinkSchema = z.object({
+  label: z.string().trim().min(1).max(100),
+  url: z.string().trim().url("Each download link must be a valid URL."),
+});
+
 const createProductSchema = z.object({
   name: z.string().trim().min(2).max(150),
   slug: z.string().trim().toLowerCase().regex(SLUG_RE, "slug may only contain lowercase letters, numbers, and hyphens").optional(),
@@ -18,6 +25,7 @@ const createProductSchema = z.object({
   stock: z.coerce.number().int().min(0).optional().default(0),
   specifications: z.record(z.string(), z.string()).optional(),
   tags: z.array(z.string().trim().toLowerCase()).optional(),
+  downloadLinks: z.array(downloadLinkSchema).max(20).optional(),
   isActive: z.coerce.boolean().optional(),
   // isFeatured/isBestSeller mark a product for a curated homepage rail;
   // the paired *Order fields are optional here because the controller
@@ -44,6 +52,7 @@ const updateProductSchema = z.object({
   stock: z.coerce.number().int().min(0),
   specifications: z.record(z.string(), z.string()),
   tags: z.array(z.string().trim().toLowerCase()),
+  downloadLinks: z.array(downloadLinkSchema).max(20),
   isActive: z.coerce.boolean(),
   isFeatured: z.coerce.boolean(),
   homepageFeaturedOrder: z.coerce.number().int().min(0),

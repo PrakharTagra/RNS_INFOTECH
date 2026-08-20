@@ -15,7 +15,7 @@ import { useCompare } from "./context/CompareContext";
 import { useToast } from "./context/ToastContext";
 import { useAuth } from "./context/AuthContext";
 
-import { nav, footer, downloads } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 import { useSiteSettings } from "./context/SiteSettingsContext";
 import { apiRequest, normalizeProduct, normalizeReview } from "./lib/api";
 
@@ -187,10 +187,10 @@ export default function ProductDetailPage() {
     [product?.categoryId, id, relatedProducts]
   );
 
-  const productDownloads = useMemo(
-    () => downloads.filter((d) => d.categoryId === product?.categoryId || d.categoryId === "universal"),
-    [product?.categoryId]
-  );
+  // Per-product download links, added by the admin at product
+  // creation/edit time and pointing at the manufacturer's own site —
+  // no longer sourced from the static siteData `downloads` catalogue.
+  const productDownloads = product?.downloadLinks || [];
 
   const ratingBreakdown = useMemo(() => {
     const counts = [5, 4, 3, 2, 1].map((star) => ({
@@ -659,6 +659,9 @@ export default function ProductDetailPage() {
             <h2 className="rns-section-title" style={{ marginTop: 8 }}>
               Downloads for this product
             </h2>
+            <p style={{ marginTop: 10, fontSize: 13, color: "var(--rns-ink-soft)", maxWidth: 560 }}>
+              Drivers, manuals, and setup guides, hosted on the manufacturer's own website.
+            </p>
             <div
               style={{
                 marginTop: 24,
@@ -669,8 +672,10 @@ export default function ProductDetailPage() {
             >
               {productDownloads.map((d) => (
                 <a
-                  key={d.id}
-                  href={d.href}
+                  key={d.id || d.url}
+                  href={d.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="rns-card"
                   style={{
                     display: "flex",
@@ -698,11 +703,10 @@ export default function ProductDetailPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 500 }}>{d.label}</div>
                     <div style={{ fontSize: 11.5, color: "var(--rns-ink-faint)", marginTop: 2 }}>
-                      {d.fileType} · {d.size}
-                      {d.version ? ` · ${d.version}` : ""}
+                      From the manufacturer's website
                     </div>
                   </div>
-                  <Icon name="download" size={16} style={{ color: "var(--rns-ink-faint)", flexShrink: 0 }} />
+                  <Icon name="external" size={16} style={{ color: "var(--rns-ink-faint)", flexShrink: 0 }} />
                 </a>
               ))}
             </div>

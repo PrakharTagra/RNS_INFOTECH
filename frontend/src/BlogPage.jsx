@@ -68,7 +68,7 @@ function PostCard({ post }) {
 /**
  * BlogPage — card grid over published CMS posts with category
  * filter chips + a debounced title/excerpt search, matching the pattern
- * used by ProductsPage/DownloadsPage. Only 5 posts exist in this mock
+ * used by ProductsPage. Only 5 posts exist in this mock
  * dataset, so there's no pagination yet — add it back (Pagination
  * component, same PAGE_SIZE pattern as ProductsPage) once post count
  * grows past a page or two.

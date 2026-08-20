@@ -47,83 +47,13 @@ export const about = {
   ],
 };
 
-// Driver/manual downloads, grouped by category so a product detail page
-// can pull "downloads for this product's category" plus anything tagged
-// universal. Placeholder hrefs ("#") match the pattern used elsewhere in
-// this mock dataset (e.g. `downloads[].href` below) until real asset
-// URLs exist.
-export const downloads = [
-  {
-    id: "dl-universal-driver",
-    label: "RNS Universal Tablet Driver",
-    categoryId: "universal",
-    type: "driver",
-    fileType: "EXE / DMG",
-    size: "84 MB",
-    version: "v6.2.1",
-    href: "#",
-  },
-  {
-    id: "dl-pen-displays-driver",
-    label: "Pen Display Driver Suite",
-    categoryId: "pen-displays",
-    type: "driver",
-    fileType: "EXE / DMG",
-    size: "142 MB",
-    version: "v4.8.0",
-    href: "#",
-  },
-  {
-    id: "dl-pen-displays-manual",
-    label: "Pen Display User Manual",
-    categoryId: "pen-displays",
-    type: "manual",
-    fileType: "PDF",
-    size: "6.1 MB",
-    version: null,
-    href: "#",
-  },
-  {
-    id: "dl-pen-tablets-driver",
-    label: "Pen Tablet Driver Suite",
-    categoryId: "pen-tablets",
-    type: "driver",
-    fileType: "EXE / DMG",
-    size: "98 MB",
-    version: "v5.1.3",
-    href: "#",
-  },
-  {
-    id: "dl-pen-tablets-manual",
-    label: "Pen Tablet Quick Start Guide",
-    categoryId: "pen-tablets",
-    type: "manual",
-    fileType: "PDF",
-    size: "3.4 MB",
-    version: null,
-    href: "#",
-  },
-  {
-    id: "dl-stylus-manual",
-    label: "Stylus Pairing & Care Guide",
-    categoryId: "stylus",
-    type: "manual",
-    fileType: "PDF",
-    size: "1.8 MB",
-    version: null,
-    href: "#",
-  },
-  {
-    id: "dl-accessories-manual",
-    label: "Accessories Setup Guide",
-    categoryId: "accessories",
-    type: "manual",
-    fileType: "PDF",
-    size: "1.2 MB",
-    version: null,
-    href: "#",
-  },
-];
+// NOTE: There used to be a static, category-grouped `downloads` catalogue
+// here (drivers/manuals with placeholder "#" hrefs), plus a standalone
+// /downloads page that read from it. Downloads are now per-product: an
+// admin adds label + URL pairs (pointing at the manufacturer's own site)
+// when creating/editing a product, and they render directly on that
+// product's detail page via `product.downloadLinks` from the API. See
+// ProductDetailPage.jsx and admin-portal's ProductFormPage.jsx.
 
 export const demo = {
   eyebrow: "See it before you buy",
@@ -188,7 +118,6 @@ export const footer = {
       links: [
         { label: "Track an order", href: "/orders" },
         { label: "Warranty claim", href: "/warranty" },
-        { label: "Downloads", href: "/downloads" },
         { label: "FAQs", href: "/help#faqs" },
       ],
     },
@@ -204,9 +133,7 @@ export const footer = {
     placeholder: "you@studio.com",
     cta: "Subscribe",
   },
-  // Placeholder hrefs ("#") match the pattern used elsewhere in this mock
-  // dataset (e.g. `downloads[].href` above) until real social profile
-  // URLs exist.
+  // Placeholder hrefs ("#") until real social profile URLs exist.
   social: [
     { name: "Instagram", href: "#", icon: "instagram" },
     { name: "Facebook", href: "#", icon: "facebook" },

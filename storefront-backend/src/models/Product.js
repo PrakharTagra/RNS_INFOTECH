@@ -14,6 +14,17 @@ const productImageSchema = new mongoose.Schema(
   { _id: true }
 );
 
+// Mirrors admin-backend/src/models/Product.js — manufacturer-hosted
+// driver/manual links set by the admin at product creation/edit time.
+// Read-only here, same as the rest of this file.
+const productDownloadLinkSchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true, trim: true, maxlength: 100 },
+    url: { type: String, required: true, trim: true },
+  },
+  { _id: true }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -30,6 +41,7 @@ const productSchema = new mongoose.Schema(
     stock: { type: Number, required: true, min: 0, default: 0 },
     specifications: { type: Map, of: String, default: {} },
     tags: [{ type: String, trim: true, lowercase: true }],
+    downloadLinks: { type: [productDownloadLinkSchema], default: [] },
     // Written by admin-backend's Phase B6 review-moderation flow, read
     // here for product listing/detail display only.
     rating: { type: Number, default: 0, min: 0, max: 5 },

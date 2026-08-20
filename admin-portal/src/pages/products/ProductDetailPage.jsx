@@ -126,6 +126,22 @@ export default function ProductDetailPage() {
               </div>
             </div>
           )}
+
+          {product.downloadLinks?.length > 0 && (
+            <div className="admin-card">
+              <h3 style={{ fontSize: 14, marginBottom: 12 }}>Download links</h3>
+              <div className="admin-kv-list">
+                {product.downloadLinks.map((d, i) => (
+                  <div key={d.id || i}>
+                    <span>{d.label}</span>
+                    <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--admin-accent)" }}>
+                      {d.url}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

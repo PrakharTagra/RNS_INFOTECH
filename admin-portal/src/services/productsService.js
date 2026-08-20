@@ -35,6 +35,9 @@ function normalizeProduct(product = {}) {
     description: product.description || "",
     highlights: Array.isArray(product.highlights) ? product.highlights : [],
     specs: Array.isArray(product.specifications) ? product.specifications : [],
+    downloadLinks: Array.isArray(product.downloadLinks)
+      ? product.downloadLinks.map((d) => ({ id: d._id || d.id || "", label: d.label || "", url: d.url || "" }))
+      : [],
     rating: Number(product.rating || 0),
     reviewCount: Number(product.reviewCount || 0),
     isFeatured: Boolean(product.isFeatured),
@@ -65,6 +68,9 @@ function toApiPayload(data) {
     tags: Array.isArray(data.tags) ? data.tags.map((t) => String(t).trim().toLowerCase()).filter(Boolean) : [],
     highlights: Array.isArray(data.highlights) ? data.highlights.filter(Boolean) : [],
     specifications: Array.isArray(data.specs) ? Object.fromEntries(data.specs.filter((s) => s && s.label && s.value).map((s) => [s.label, s.value])) : {},
+    downloadLinks: Array.isArray(data.downloadLinks)
+      ? data.downloadLinks.filter((d) => d && d.label && d.url).map((d) => ({ label: String(d.label).trim(), url: String(d.url).trim() }))
+      : [],
   };
   // Only send an explicit order when the admin actually set one — leaving
   // it out (rather than sending "") lets the backend auto-assign the next

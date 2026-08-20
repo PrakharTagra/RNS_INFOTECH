@@ -323,6 +323,13 @@ export function normalizeProduct(product = {}) {
     description: product.description || product.shortDescription || "",
     highlights: product.highlights || [],
     specs,
+    // Manufacturer-hosted driver/manual links, set by the admin at
+    // product creation/edit time — see ProductDetailPage's "Downloads
+    // for this product" section, which renders these directly instead
+    // of pulling from the old static siteData `downloads` catalogue.
+    downloadLinks: Array.isArray(product.downloadLinks)
+      ? product.downloadLinks.map((d) => ({ id: d._id || d.id || "", label: d.label || "", url: d.url || "" })).filter((d) => d.label && d.url)
+      : [],
     rating: Number(product.rating || 0),
     reviewCount: Number(product.reviewCount || 0),
     reviews: product.reviews || [],

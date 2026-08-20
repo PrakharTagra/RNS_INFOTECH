@@ -7,7 +7,7 @@ async function sitemap(req, res, next) {
   try {
     const base = siteUrl();
     if (!base) return res.status(503).type('text/plain').send('PUBLIC_SITE_URL is not configured');
-    const urls = ['/', '/products', '/help', '/about', '/request-quote', '/privacy-policy', '/terms', '/return-policy', '/warranty', '/corporate-sales', '/blog', '/downloads', '/compare'];
+    const urls = ['/', '/products', '/help', '/about', '/request-quote', '/privacy-policy', '/terms', '/return-policy', '/warranty', '/corporate-sales', '/blog', '/compare'];
     const [products, posts] = await Promise.all([
       Product.find({ isActive: true }).select('_id updatedAt').lean().limit(50000),
       BlogPost.find({ status: 'published', publicationDate: { $lte: new Date() } }).select('slug updatedAt').lean().limit(10000),

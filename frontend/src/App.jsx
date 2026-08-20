@@ -46,7 +46,6 @@ const NotFoundPage = lazy(() => import("./NotFoundPage"));
 const CorporateSalesPage = lazy(() => import("./CorporateSalesPage"));
 const BlogPage = lazy(() => import("./BlogPage"));
 const BlogPostPage = lazy(() => import("./BlogPostPage"));
-const DownloadsPage = lazy(() => import("./DownloadsPage"));
 const WarrantyPage = lazy(() => import("./WarrantyPage"));
 const ComparePage = lazy(() => import("./ComparePage"));
 // NOTE: FAQPage and ContactPage were deliberately not added — HelpPage.jsx
@@ -103,7 +102,6 @@ export default function App() {
                       <Route path="/corporate-sales" element={<CorporateSalesPage />} />
                       <Route path="/blog" element={<BlogPage />} />
                       <Route path="/blog/:slug" element={<BlogPostPage />} />
-                      <Route path="/downloads" element={<DownloadsPage />} />
                       <Route path="/compare" element={<ComparePage />} />
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/signup" element={<SignupPage />} />

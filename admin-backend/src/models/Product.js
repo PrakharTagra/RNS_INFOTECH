@@ -17,6 +17,18 @@ const productImageSchema = new mongoose.Schema(
   { _id: true }
 );
 
+// Manufacturer-hosted driver/manual links, added by the admin at product
+// creation/edit time. These point at the original brand website rather
+// than any file we host ourselves — no upload, no storage, just a label
+// + URL shown on the product's detail page.
+const productDownloadLinkSchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true, trim: true, maxlength: 100 },
+    url: { type: String, required: true, trim: true },
+  },
+  { _id: true }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -39,6 +51,14 @@ const productSchema = new mongoose.Schema(
     // just the current count.
     specifications: { type: Map, of: String, default: {} },
     tags: [{ type: String, trim: true, lowercase: true }],
+    // Links to drivers/manuals hosted on the manufacturer's own site —
+    // see productDownloadLinkSchema above. Capped at 20, same rationale
+    // as the 12-image cap: keep the admin form and detail page sane.
+    downloadLinks: {
+      type: [productDownloadLinkSchema],
+      default: [],
+      validate: { validator: (links) => links.length <= 20, message: "A product may have at most 20 download links." },
+    },
     // Both set by Phase B6 (Reviews) moderation, not written here in B2 —
     // present now so the field exists on every product from the start
     // rather than being backfilled later.
