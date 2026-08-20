@@ -25,7 +25,6 @@ export const navConfig = [
       { label: "Orders", path: "/orders", icon: "truck", phase: 4, status: "built" },
       { label: "Payments", path: "/payments", icon: "creditCard", phase: 4, status: "built" },
       { label: "Coupons", path: "/coupons", icon: "percent", phase: 8, status: "built" },
-      { label: "Returns", path: "/returns", icon: "package", phase: 19, status: "built" },
     ],
   },
   {

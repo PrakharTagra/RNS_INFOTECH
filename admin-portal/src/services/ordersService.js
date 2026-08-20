@@ -43,7 +43,7 @@ function normalizeOrder(order = {}) {
     // those never reach this collection view in the first place).
     paymentStatus: order.paymentStatus || "paid",
     paymentVerifiedAt: order.paymentVerifiedAt || null,
-    deliveryEstimate: order.deliveryEstimate || "8-10 days",
+    deliveryEstimate: order.deliveryEstimate || "3-4 days",
     customerName: order.user?.name || shipping.fullName || shipping.name || "",
     customerEmail: order.user?.email || order.customerEmail || "",
     courierName: order.courierName || null,

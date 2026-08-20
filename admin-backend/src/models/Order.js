@@ -92,7 +92,7 @@ const orderSchema = new mongoose.Schema(
     // aggregates below must always filter on this, not just on `status`,
     // per the "only successful orders count as sales" requirement.
     paymentVerifiedAt: { type: Date, default: null, index: true },
-    deliveryEstimate: { type: String, default: "8-10 days" },
+    deliveryEstimate: { type: String, default: "3-4 days" },
     courierName: { type: String, default: null },
     trackingId: { type: String, default: null },
     confirmedAt: { type: Date, default: null },

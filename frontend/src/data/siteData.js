@@ -434,7 +434,7 @@ export const whyChooseUs = [
   {
     icon: "truck",
     title: "Reliable delivery",
-    body: "Every order is delivered within 8-10 days, tracked from dispatch to your door.",
+    body: "Every order is delivered within 3-4 days, tracked from dispatch to your door.",
   },
   {
     icon: "headset",
@@ -523,7 +523,7 @@ export const faqs = [
   },
   {
     q: "How long does delivery take?",
-    a: "Every order is delivered within 8-10 days of being placed, with tracking shared on shipment.",
+    a: "Every order is delivered within 3-4 days of being placed, with tracking shared on shipment.",
   },
   {
     q: "Do you offer bulk pricing for studios or institutions?",
@@ -728,7 +728,7 @@ export const footer = {
   legal: [
     { label: "Privacy policy", href: "/privacy-policy" },
     { label: "Terms of service", href: "/terms" },
-    { label: "Return policy", href: "/return-policy" },
+    { label: "Returns & product support", href: "/return-policy" },
   ],
   newsletter: {
     title: "Get restock alerts & offers",
@@ -783,46 +783,6 @@ export const privacyPolicy = {
     {
       title: "Contact",
       body: "Questions about this policy can be sent to support@rnsinfotech.in.",
-    },
-  ],
-};
-
-export const returnPolicy = {
-  updated: "August 2026",
-  intro:
-    "This policy explains how returns, exchanges, and refunds work for orders placed through the RNS INFOTECH website. This is placeholder content for a demo project and should be replaced with a policy reviewed by counsel before the site goes live.",
-  sections: [
-    {
-      title: "Return window",
-      body: "Most products can be returned within 7 days of delivery. Pen displays and pen tablets must be unused, in their original packaging, with all accessories, manuals, and seals intact.",
-    },
-    {
-      title: "Damaged or defective on arrival",
-      body: "If an item arrives damaged or isn't working, email us within 48 hours of delivery with your order ID and photos or a short video of the issue — we'll arrange a replacement or full refund and cover the return shipping.",
-    },
-    {
-      title: "Change of mind",
-      body: "For change-of-mind returns, the item must be unopened and unused; return shipping is the customer's responsibility unless the order qualified for free returns at checkout.",
-    },
-    {
-      title: "What can't be returned",
-      body: "Stylus nibs and consumables once the packaging is opened, products with a broken hygiene or warranty seal, and items reported outside the 7-day window can't be accepted for return.",
-    },
-    {
-      title: "How to start a return",
-      body: "Email support@rnsinfotech.in with your order ID and reason for return, or use the Track an order page to find the order and start the request. We'll confirm eligibility and share the return address.",
-    },
-    {
-      title: "Refunds",
-      body: "Once the returned item passes inspection, refunds are issued to the original online payment method within 5-7 business days.",
-    },
-    {
-      title: "Exchanges",
-      body: "Prefer a different model instead of a refund? Let support know when you start the return and we'll set up an exchange, adjusting for any price difference.",
-    },
-    {
-      title: "After the return window",
-      body: "Issues that come up after 7 days are usually covered under manufacturer warranty rather than this return policy — see the Warranty claim section on the Help page.",
     },
   ],
 };

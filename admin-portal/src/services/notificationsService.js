@@ -1,13 +1,12 @@
 import { getDashboardSummary } from "./dashboardService";
 import { getOrders } from "./ordersService";
 import { getReviews } from "./reviewsService";
-import { getReturns } from "./returnsService";
 
 // There's no notifications model/endpoint on admin-backend, so this
 // is computed client-side from data the existing services already
-// expose — low stock (dashboard summary), pending orders, pending
-// reviews, and pending return requests. "Read" state has nothing to
-// persist against on the server, so it's tracked locally instead.
+// expose — low stock (dashboard summary), pending orders, and pending
+// reviews. "Read" state has nothing to persist against on the server,
+// so it's tracked locally instead.
 const DISMISSED_KEY = "admin_notifications_dismissed_v1";
 const MAX_PER_GROUP = 5;
 
@@ -62,11 +61,10 @@ function timeAgo(dateLike) {
  * source failing doesn't take down the whole panel.
  */
 export async function getNotifications() {
-  const [summary, pendingOrders, pendingReviews, pendingReturns] = await Promise.all([
+  const [summary, pendingOrders, pendingReviews] = await Promise.all([
     getDashboardSummary().catch(() => null),
     getOrders({ status: "pending" }).catch(() => []),
     getReviews({ status: "pending" }).catch(() => []),
-    getReturns({ status: "requested", limit: MAX_PER_GROUP }).catch(() => ({ items: [] })),
   ]);
 
   const items = [];
@@ -109,18 +107,6 @@ export async function getNotifications() {
       href: "/reviews",
       at: null,
       timeLabelOverride: r.date || "",
-    });
-  });
-
-  (pendingReturns?.items || []).slice(0, MAX_PER_GROUP).forEach((r) => {
-    items.push({
-      id: `return:${r._id || r.id}`,
-      icon: "refresh",
-      severity: "warning",
-      title: "Return request needs review",
-      detail: `${r.user?.name || r.user?.email || "Customer"} · ${r.reason || "No reason given"}`,
-      href: "/returns",
-      at: r.createdAt,
     });
   });
 

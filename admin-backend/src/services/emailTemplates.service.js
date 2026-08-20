@@ -34,8 +34,6 @@ function render(template, data = {}) {
       return { subject:`Order ${d.orderNumber || d.orderId} cancelled`, text:`Order ${d.orderNumber || d.orderId} was cancelled. ${d.reason || ""}`, html:layout("Order cancelled",`<p>Order <strong>${esc(d.orderNumber || d.orderId)}</strong> was cancelled.</p><p>${esc(d.reason || "")}</p>`) };
     case "refund":
       return { subject:`Refund update for order ${d.orderNumber || d.orderId}`, text:`Refund of ₹${d.amount} for order ${d.orderNumber || d.orderId} is ${d.status}. Refund ID: ${d.refundId || "pending"}.`, html:layout("Refund update",`<p>Refund for order <strong>${esc(d.orderNumber || d.orderId)}</strong>: ₹${esc(d.amount)}.</p><p>Status: ${esc(d.status)}${d.refundId ? `<br>Refund ID: ${esc(d.refundId)}` : ""}</p>`) };
-    case "return":
-      return { subject:`Return update for order ${d.orderNumber || d.orderId}`, text:`Your return request for order ${d.orderNumber || d.orderId} is now ${d.status}.`, html:layout("Return update",`<p>Your return request for <strong>${esc(d.orderNumber || d.orderId)}</strong> is now <strong>${esc(d.status)}</strong>.</p>${d.reason ? `<p>${esc(d.reason)}</p>` : ""}`) };
     default: throw new Error(`Unknown email template: ${template}`);
   }
 }

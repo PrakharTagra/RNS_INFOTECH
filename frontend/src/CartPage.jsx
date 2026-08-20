@@ -24,7 +24,7 @@ function formatINR(n) {
  * lives here. "Checkout" hands the current cart items off to
  * CheckoutPage (the shared order-details step used by both the cart
  * and "Order now"), which is where address and online payment happen
- * (delivery is fixed for every order — 8-10 days — so it's not a
+ * (delivery is fixed for every order — 3-4 days — so it's not a
  * choice made here or there).
  */
 export default function CartPage() {

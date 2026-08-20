@@ -84,7 +84,7 @@ export default function CommerceTab() {
             <input id="cs-tax" type="number" min="0" step="0.01" className="admin-input"
               value={form.taxRate ?? 0} onChange={(e) => set("taxRate", e.target.value)} />
           </FormField>
-          <FormField label="Delivery fee" htmlFor="cs-standard" hint="Charged on every order, in ₹. Delivery is no longer a customer choice — every order ships within 8-10 days at this one fee.">
+          <FormField label="Delivery fee" htmlFor="cs-standard" hint="Charged on every order, in ₹. Delivery is no longer a customer choice — every order ships within 3-4 days at this one fee.">
             <input id="cs-standard" type="number" min="0" step="0.01" className="admin-input"
               value={form.standardDeliveryFee ?? 0} onChange={(e) => set("standardDeliveryFee", e.target.value)} />
           </FormField>

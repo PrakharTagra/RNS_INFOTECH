@@ -10,8 +10,10 @@ import { getPolicyContent } from "./lib/contentApi";
 import { ErrorState } from "./components/ui/Stateviews";
 
 /**
- * ReturnPolicyPage — standard return & refund policy content, mirrors
- * TermsPage / PrivacyPolicyPage's layout.
+ * ReturnPolicyPage — explains that RNS INFOTECH doesn't do returns or
+ * refunds for change of mind, and that any product issue should go
+ * straight to support instead. Mirrors TermsPage / PrivacyPolicyPage's
+ * layout; content itself is CMS-driven (see the "returns" policy key).
  */
 export default function ReturnPolicyPage() {
   const [policy, setPolicy] = useState(null);
@@ -21,7 +23,7 @@ export default function ReturnPolicyPage() {
 
   if (!policy) return (
     <>
-      <SEO title="Return & refund policy" noindex />
+      <SEO title="Returns & product support" noindex />
       <AnnouncementBar />
       <Navbar />
       <section className="rns-section"><div className="rns-container"><ErrorState message={policyError?.message || "Unable to load this policy right now."} /></div></section>
@@ -31,7 +33,7 @@ export default function ReturnPolicyPage() {
 
   return (
     <>
-      <SEO title="Return & refund policy" description="How returns, exchanges, and refunds work for orders placed through RNS INFOTECH." />
+      <SEO title="Returns & product support" description="Our approach to returns and refunds, and how to reach RNS INFOTECH directly if there's an issue with your product." />
       <AnnouncementBar {...announcement} />
       <Navbar {...nav} />
 
@@ -40,7 +42,7 @@ export default function ReturnPolicyPage() {
         <div style={{ maxWidth: 720 }}>
           <span className="rns-eyebrow">Legal</span>
           <h1 className="rns-section-title" style={{ marginTop: 8 }}>
-            Return &amp; refund policy
+            Returns &amp; product support
           </h1>
           <p style={{ marginTop: 10, fontSize: 12.5, color: "var(--rns-ink-faint)" }}>
             Last updated {policy.updated}

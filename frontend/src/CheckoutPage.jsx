@@ -33,7 +33,7 @@ function formatINR(n) {
  *   - Address comes from the saved address book (AddressContext /
  *     ProfilePage), with an inline "add new address" fallback.
  *   - Delivery is not a customer choice: every order ships standard,
- *     8-10 days, shown as a fixed line rather than a picker.
+ *     3-4 days, shown as a fixed line rather than a picker.
  *   - Payment is online-only (Razorpay) — no cash on delivery, no "pay
  *     later" at checkout. The order is only created here as a
  *     reserved/pending record so stock can be held; it is not
@@ -49,7 +49,7 @@ export default function CheckoutPage() {
   const items = location.state?.items || [];
   const mode = location.state?.mode || "cart"; // "cart" | "buy-now"
 
-  // Delivery is fixed (8-10 days, standard) and payment is online-only —
+  // Delivery is fixed (3-4 days, standard) and payment is online-only —
   // neither is a user-facing choice anymore, and the backend no longer
   // accepts a delivery method at all.
 

@@ -5,4 +5,4 @@
  * and fees.
  */
 export const DELIVERY_ESTIMATE_LABEL = "Standard delivery";
-export const DELIVERY_ESTIMATE_TEXT = "Delivered within 8-10 days";
+export const DELIVERY_ESTIMATE_TEXT = "Delivered within 3-4 days";

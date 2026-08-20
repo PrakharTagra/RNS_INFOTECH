@@ -585,9 +585,9 @@ export default function ProductDetailPage() {
               }}
             >
               {[
-                { icon: "truck", label: "Delivery", body: "8-10 days" },
+                { icon: "truck", label: "Delivery", body: "3-4 days" },
                 { icon: "shield", label: "100% genuine", body: "Authorized dealer" },
-                { icon: "refresh", label: "Easy returns", body: "7-day return window" },
+                { icon: "headset", label: "Product issue?", body: "Contact us directly" },
               ].map((t) => (
                 <div key={t.label} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <span style={{ color: "var(--rns-ink-soft)", flexShrink: 0 }}>

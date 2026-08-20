@@ -19,7 +19,6 @@ const brandRoutes = require("./brand.routes");
 const websiteRoutes = require("./website.routes");
 const flashMessageRoutes = require("./flashMessage.routes");
 const auditRoutes = require("./audit.routes");
-const returnRoutes = require("./return.routes");
 
 // Every future phase adds one line here (e.g. `router.use("/products",
 // productRoutes)`) instead of mounting routes directly in server.js, so
@@ -46,6 +45,5 @@ router.use("/brands", brandRoutes);
 router.use("/website", websiteRoutes);
 router.use("/flash-messages", flashMessageRoutes);
 router.use("/audit-logs", auditRoutes);
-router.use("/returns", returnRoutes);
 
 module.exports = router;

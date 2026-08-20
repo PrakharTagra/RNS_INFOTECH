@@ -31,11 +31,10 @@ const ContentPage = lazy(() => import("./pages/content/ContentPage"));
 const SettingsPage = lazy(() => import("./pages/settings/SettingsPage"));
 const StaffPage = lazy(() => import("./pages/StaffPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
-const ReturnsPage = lazy(() => import("./pages/returns/ReturnsPage"));
 
 import { getCurrentAdmin, onAdminUnauthorized } from "./lib/adminApi";
 
-const BUILT_PATHS = new Set(["/products", "/categories", "/brands", "/inventory", "/orders", "/payments", "/customers", "/leads", "/chat", "/website", "/coupons", "/reviews", "/content", "/settings", "/staff", "/audit", "/returns"]);
+const BUILT_PATHS = new Set(["/products", "/categories", "/brands", "/inventory", "/orders", "/payments", "/customers", "/leads", "/chat", "/website", "/coupons", "/reviews", "/content", "/settings", "/staff", "/audit"]);
 
 function RequireAdmin() {
   const location = useLocation();
@@ -135,7 +134,6 @@ export default function App() {
             <Route path="/settings" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><SettingsPage /></Suspense>} />
             <Route path="/staff" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><StaffPage /></Suspense>} />
             <Route path="/audit" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><AuditLogPage /></Suspense>} />
-            <Route path="/returns" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ReturnsPage /></Suspense>} />
             {navItemsFlat.filter((item) => item.path !== "/" && !BUILT_PATHS.has(item.path)).map((item) => (
               <Route key={item.path} path={`${item.path}/*`} element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><StubPage /></Suspense>} />
             ))}

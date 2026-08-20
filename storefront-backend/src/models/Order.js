@@ -106,8 +106,8 @@ const orderSchema = new mongoose.Schema(
     paymentVerifiedAt: { type: Date, default: null, index: true },
     // Fixed at order placement, shown to the customer throughout checkout
     // and order tracking. Not derived from courier data — this store's
-    // delivery promise is a flat 8-10 day estimate, not per-order ETAs.
-    deliveryEstimate: { type: String, default: "8-10 days" },
+    // delivery promise is a flat 3-4 day estimate, not per-order ETAs.
+    deliveryEstimate: { type: String, default: "3-4 days" },
     // The four fields below are set by admin-backend only (confirm/ship/
     // cancel) — storefront-backend never writes to them after creation,
     // it only ever reads them back for the customer's order-tracking UI.
