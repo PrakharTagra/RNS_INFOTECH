@@ -38,9 +38,10 @@ const TABS = [
 ];
 
 /**
- * WebsitePage — Phase 7 (+ later addition). Manages everything currently
- * hardcoded in the storefront's src/data/siteData.js that renders
- * outside the product catalogue: the rotating flash-message strip (see
+ * WebsitePage — Phase 7 (+ later addition). Manages everything that
+ * renders outside the product catalogue on the storefront (all now
+ * fetched live from GET /website / /flash-messages, not read from a
+ * static file): the rotating flash-message strip (see
  * services/flashMessagesService.js), hero + promo banner (one-of-a-kind —
  * a settings singleton, see services/websiteService.js's getSettings/
  * updateSettingsSection), plus the Why choose us / Solutions /

@@ -1,9 +1,24 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { getStoreProfileContent } from "../lib/contentApi";
-import { support as defaultSupport } from "../data/siteData";
 
 const SiteSettingsContext = createContext(null);
 const REFRESH_AFTER_MS = 30_000;
+
+// Outage-only fallback, shown only until the first successful GET
+// /store-profile response merges in. Previously imported from the mock
+// `siteData.js`; inlined here since this is the only remaining reader
+// (siteData's `support` export removed in the Phase 3 cleanup — see
+// MOCK_DATA_CLEANUP_PROGRESS.md).
+const defaultSupport = {
+  email: "support@rnsinfotech.in",
+  phone: "+91 98765 43210",
+  // Digits-only, country code first — the format wa.me links require.
+  whatsapp: "919876543210",
+  hours: "Mon–Sat, 10:00 AM – 7:00 PM IST",
+  address: "RNS INFOTECH, MG Road, Bengaluru, Karnataka 560001",
+  emailResponseTime: "Usually within 24 hours",
+  chatResponseTime: "Usually within a few minutes during business hours",
+};
 
 export function SiteSettingsProvider({ children }) {
   const [support, setSupport] = useState(defaultSupport);

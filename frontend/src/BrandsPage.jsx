@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import AnnouncementBar from "./components/AnnouncementBar";
@@ -6,8 +6,11 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Icon from "./components/Icon";
 import SEO from "./components/SEO";
+import { EmptyState, ErrorState } from "./components/ui/Stateviews";
+import { SkeletonProductGrid } from "./components/ui/Skeleton";
+import { apiRequest, normalizeProduct } from "./lib/api";
 
-import { nav, footer, brands } from "./data/siteData";
+import { nav, footer } from "./data/siteData";
 
 function BrandCard({ name, logo }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -76,11 +79,47 @@ function BrandCard({ name, logo }) {
 
 /**
  * BrandsPage — a dedicated listing of the brand partners RNS INFOTECH
- * carries. Each card links into /products with that brand pre-selected
- * as a filter (?brand=<name>), matching the `brand` field on each
- * product in siteData.
+ * carries. There's no public storefront endpoint for brands (only
+ * admin CRUD — see MOCK_DATA_CLEANUP_PROGRESS.md), so instead of a
+ * dedicated fetch, the brand list is derived from the live product
+ * catalogue's `brand` field (GET /products, same "whole catalogue"
+ * call ProductsPage/search already make with limit=200). Each card
+ * links into /products with that brand pre-selected as a filter
+ * (?brand=<name>).
  */
 export default function BrandsPage() {
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function load() {
+      try {
+        setLoadError(null);
+        const productsRes = await apiRequest("/products?page=1&limit=200");
+        if (ignore) return;
+
+        const names = new Set(
+          (productsRes?.items || [])
+            .map((p) => normalizeProduct(p).brand)
+            .filter(Boolean)
+        );
+        setBrands([...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ name })));
+      } catch (error) {
+        if (!ignore) setLoadError(error);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   return (
     <>
       <SEO
@@ -104,11 +143,22 @@ export default function BrandsPage() {
       </section>
 
       <section className="rns-container" style={{ paddingBottom: 40 }}>
-        <div className="rns-grid rns-grid--4">
-          {brands.map((b) => (
-            <BrandCard key={b.name} {...b} />
-          ))}
-        </div>
+        {loading ? (
+          <SkeletonProductGrid count={8} columns={4} />
+        ) : loadError ? (
+          <ErrorState message="Brands couldn't be loaded right now." />
+        ) : brands.length === 0 ? (
+          <EmptyState
+            title="No brands to show yet"
+            message="Check back soon — brand partners will appear here as products are added."
+          />
+        ) : (
+          <div className="rns-grid rns-grid--4">
+            {brands.map((b) => (
+              <BrandCard key={b.name} {...b} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="rns-container" style={{ padding: "8px 24px 64px" }}>

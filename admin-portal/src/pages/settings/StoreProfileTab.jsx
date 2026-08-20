@@ -5,10 +5,9 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import { getStoreProfile, updateStoreProfile } from "../../services/settingsService";
 
-// Mirrors frontend.zip's src/data/siteData.js `support` export —
-// once a backend/API connects the two apps, this is the shape that
-// should flow through to the storefront's contact details, Help page,
-// and invoice footer.
+// This is the shape that flows through to the storefront's contact
+// details, Help page, and invoice footer via GET /store-profile — see
+// frontend's context/SiteSettingsContext.jsx.
 export default function StoreProfileTab() {
   const { toast, showToast, clearToast } = useToast();
   const [form, setForm] = useState(null);
