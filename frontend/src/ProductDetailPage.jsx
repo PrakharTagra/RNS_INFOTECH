@@ -123,6 +123,31 @@ export default function ProductDetailPage() {
   // even though the backend's own one-review-per-product-per-user
   // constraint (a 409 on a second POST) is the real source of truth.
   const [reviewStatus, setReviewStatus] = useState("idle");
+  // Verified-purchase gate: only someone whose order for this product
+  // has actually shipped can write a review — see review.controller.js's
+  // eligibility endpoint, which mirrors the same check `create` enforces
+  // server-side. null while we haven't checked yet (or aren't signed in).
+  const [reviewEligibility, setReviewEligibility] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadEligibility() {
+      if (!isAuthenticated || !id) {
+        setReviewEligibility(null);
+        return;
+      }
+      try {
+        const res = await apiRequest(`/products/${encodeURIComponent(id)}/reviews/eligibility`, { authRequired: true });
+        if (!ignore) setReviewEligibility(res);
+      } catch {
+        if (!ignore) setReviewEligibility(null);
+      }
+    }
+    loadEligibility();
+    return () => {
+      ignore = true;
+    };
+  }, [id, isAuthenticated]);
 
   useEffect(() => {
     let ignore = false;
@@ -165,10 +190,14 @@ export default function ProductDetailPage() {
         setLiveReviews((prev) => [normalizeReview(res.review), ...prev]);
       }
       setReviewStatus("submitted");
+      setReviewEligibility({ canReview: false, reason: "already_reviewed" });
       setReviewForm({ rating: 5, comment: "" });
     } catch (err) {
       if (err.status === 409) {
         setReviewStatus("already");
+        setReviewEligibility({ canReview: false, reason: "already_reviewed" });
+      } else if (err.status === 403) {
+        setReviewEligibility({ canReview: false, reason: "not_purchased" });
       } else {
         setReviewError(err.message || "Could not submit your review. Please try again.");
       }
@@ -788,6 +817,27 @@ export default function ProductDetailPage() {
                       <div style={{ fontWeight: 600, fontSize: 13.5 }}>You've already reviewed this product</div>
                       <div style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", marginTop: 4 }}>
                         Only one review per product per account — thanks for sharing your feedback.
+                      </div>
+                    </div>
+                  </div>
+                ) : isAuthenticated && reviewEligibility?.reason === "already_reviewed" ? (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <Icon name="info" size={16} style={{ color: "var(--rns-ink-soft)", marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>You've already reviewed this product</div>
+                      <div style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", marginTop: 4 }}>
+                        Only one review per product per account — thanks for sharing your feedback.
+                      </div>
+                    </div>
+                  </div>
+                ) : isAuthenticated && reviewEligibility?.reason === "not_purchased" ? (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <Icon name="package" size={16} style={{ color: "var(--rns-ink-soft)", marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>Only verified buyers can review this product</div>
+                      <div style={{ fontSize: 12.5, color: "var(--rns-ink-soft)", marginTop: 4 }}>
+                        Once your order for this product is delivered, a "Write a review" link will show up in{" "}
+                        <Link to="/orders" style={{ color: "var(--rns-primary)" }}>your orders</Link>.
                       </div>
                     </div>
                   </div>

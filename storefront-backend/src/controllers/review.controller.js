@@ -1,5 +1,6 @@
 const Review = require("../models/Review");
 const Product = require("../models/Product");
+const Order = require("../models/Order");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 
@@ -23,6 +24,20 @@ const create = asyncHandler(async (req, res) => {
   const existing = await Review.findOne({ product: productId, user: req.auth.userId });
   if (existing) {
     throw ApiError.conflict("You have already reviewed this product.");
+  }
+
+  // Verified-purchase gate: only someone who has actually received this
+  // product can review it — matches the "Write a review" link that only
+  // appears on shipped orders in OrdersPage/OrderDetailPage. Checking
+  // status: "shipped" (rather than just "any order exists") means a
+  // pending/confirmed-but-not-yet-delivered order doesn't unlock reviewing.
+  const purchase = await Order.findOne({
+    user: req.auth.userId,
+    status: "shipped",
+    "items.product": productId,
+  });
+  if (!purchase) {
+    throw ApiError.forbidden("You can only review products from a delivered order.");
   }
 
   const review = await Review.create({
@@ -55,4 +70,25 @@ const listByProduct = asyncHandler(async (req, res) => {
   res.json({ items, page, limit, total, totalPages: Math.ceil(total / limit) });
 });
 
-module.exports = { create, listByProduct, updateProductRating };
+// Lets the storefront decide up front whether to show the review form
+// (vs. "buy it and get it delivered first" / "you've already reviewed
+// this") instead of only finding out after the shopper writes a review
+// and hits submit. Mirrors the same checks `create` enforces server-side.
+const eligibility = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+
+  const [alreadyReviewed, purchase] = await Promise.all([
+    Review.exists({ product: productId, user: req.auth.userId }),
+    Order.exists({ user: req.auth.userId, status: "shipped", "items.product": productId }),
+  ]);
+
+  if (alreadyReviewed) {
+    return res.json({ canReview: false, reason: "already_reviewed" });
+  }
+  if (!purchase) {
+    return res.json({ canReview: false, reason: "not_purchased" });
+  }
+  res.json({ canReview: true, reason: null });
+});
+
+module.exports = { create, listByProduct, eligibility, updateProductRating };

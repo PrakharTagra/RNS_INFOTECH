@@ -14,5 +14,6 @@ const router = Router();
 // whole router.
 router.post("/:productId/reviews", requireAuth, validateParam("productId"), validate(createReviewSchema), reviewController.create);
 router.get("/:productId/reviews", validateParam("productId"), validate(listReviewsQuerySchema, "query"), reviewController.listByProduct);
+router.get("/:productId/reviews/eligibility", requireAuth, validateParam("productId"), reviewController.eligibility);
 
 module.exports = router;
