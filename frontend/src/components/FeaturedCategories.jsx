@@ -40,11 +40,13 @@ export default function FeaturedCategories({ categories = [] }) {
                     src={c.image}
                     alt={c.name}
                     loading="lazy"
+                    className="rns-category-img"
                     style={{
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
                       display: "block",
+                      transition: "transform 0.25s ease",
                     }}
                   />
                 </div>
@@ -59,6 +61,7 @@ export default function FeaturedCategories({ categories = [] }) {
           ))}
         </div>
       </div>
+      <style>{`.rns-category-card:hover .rns-category-img { transform: scale(1.06); }`}</style>
     </section>
   );
 }

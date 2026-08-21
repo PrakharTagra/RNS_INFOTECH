@@ -24,9 +24,9 @@ export default function CTASection({
         className="rns-cta-section"
         style={{
           border: `1px solid ${dark ? "transparent" : "var(--rns-line)"}`,
-          borderRadius: 16,
-          background: dark ? "var(--rns-ink)" : "var(--rns-bg-alt)",
-          padding: "44px 32px",
+          borderRadius: "var(--rns-r-lg)",
+          background: dark ? "var(--rns-gradient-ink)" : "var(--rns-bg-alt)",
+          padding: "48px 32px",
           textAlign: "center",
           margin:"25px"
         }}

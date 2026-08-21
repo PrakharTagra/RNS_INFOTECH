@@ -20,11 +20,30 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
         <rect width="100%" height="100%" fill="url(#rns-grid)" />
       </svg>
 
+      {/* soft brand-colour glow, sits behind the grid — adds depth
+          without introducing any motion or heavy colour */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: "-20%",
+          right: "-10%",
+          width: "56%",
+          maxWidth: 620,
+          aspectRatio: "1 / 1",
+          background: "var(--rns-gradient-brand)",
+          opacity: 0.12,
+          filter: "blur(80px)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+        }}
+      />
+
       <div
         className="rns-container"
         style={{
           position: "relative",
-          padding: "0px 24px 40px",
+          padding: "40px 24px 40px",
           display: "grid",
           gridTemplateColumns: "minmax(0,640px) 1fr",
           gap: 40,
@@ -32,7 +51,13 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
         }}
       >
         <div>
-          <h1 style={{ fontSize: "clamp(32px, 4.2vw, 52px)", lineHeight: 1.1, marginTop: 16 }}>
+          {eyebrow && (
+            <span className="rns-badge">
+              <span className="rns-badge__dot" aria-hidden="true" />
+              {eyebrow}
+            </span>
+          )}
+          <h1 style={{ fontSize: "clamp(34px, 4.4vw, 56px)", lineHeight: 1.08, marginTop: 16 }}>
             {title}
           </h1>
           <p style={{ marginTop: 20, fontSize: 17, color: "var(--rns-ink-soft)", maxWidth: 520 }}>
@@ -72,10 +97,11 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
           className="rns-hero-panel"
           style={{
             border: "1px solid var(--rns-line)",
-            borderRadius: 16,
+            borderRadius: "var(--rns-r-lg)",
             minHeight: 320,
             position: "relative",
             overflow: "hidden",
+            boxShadow: "var(--rns-shadow-lg)",
           }}
         >
           <img

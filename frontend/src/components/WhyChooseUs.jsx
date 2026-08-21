@@ -16,17 +16,17 @@ export default function WhyChooseUs({ items = [], brandName = "RNS INFOTECH" }) 
             <Reveal key={f.title} delay={Math.min(i, 3)} style={{ padding: "4px 0" }}>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  border: "1px solid var(--rns-line)",
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  background: "var(--rns-primary-tint)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "var(--rns-primary)",
+                  color: "var(--rns-primary-dark)",
                 }}
               >
-                <Icon name={f.icon} size={20} />
+                <Icon name={f.icon} size={22} />
               </div>
               <div style={{ fontWeight: 600, fontSize: 15.5, marginTop: 16 }}>{f.title}</div>
               <p style={{ marginTop: 8, fontSize: 14, color: "var(--rns-ink-soft)" }}>{f.body}</p>

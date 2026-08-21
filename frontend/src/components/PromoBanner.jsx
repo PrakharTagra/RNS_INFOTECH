@@ -7,8 +7,8 @@ export default function PromoBanner({ eyebrow, title, body, cta }) {
       <div
         style={{
           border: "1px solid var(--rns-line)",
-          borderRadius: 16,
-          background: "var(--rns-ink)",
+          borderRadius: "var(--rns-r-lg)",
+          background: "var(--rns-gradient-ink)",
           color: "#fff",
           padding: "36px 32px",
           display: "flex",
