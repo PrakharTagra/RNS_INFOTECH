@@ -6,6 +6,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import TestimonialFormModal from "./TestimonialFormModal";
 import { getTestimonials, deleteTestimonial } from "../../services/websiteService";
+import PageLoader from "../../components/PageLoader";
 
 function Stars({ rating }) {
   return (
@@ -63,7 +64,7 @@ export default function TestimonialsTab() {
       </div>
 
       {items === null ? (
-        <div className="admin-card">Loading…</div>
+        <PageLoader inline />
       ) : items.length === 0 ? (
         <EmptyState icon="star" title="No testimonials yet" description="Add one to show it on the storefront homepage." />
       ) : (

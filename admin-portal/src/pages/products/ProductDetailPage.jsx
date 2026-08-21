@@ -7,6 +7,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import { getProduct, deleteProduct } from "../../services/productsService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
+import PageLoader from "../../components/PageLoader";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -44,7 +45,7 @@ export default function ProductDetailPage() {
   }
 
   if (loading) {
-    return <div className="admin-card">Loading product…</div>;
+    return <PageLoader />;
   }
 
   if (!product) {

@@ -9,6 +9,7 @@ import { STATUS_TONE, statusLabel } from "../../utils/format";
 import BlogFormModal from "./BlogFormModal";
 import { getBlogPosts, deleteBlogPost, previewBlogPost } from "../../services/contentService";
 import ContentPreviewModal from "./ContentPreviewModal";
+import PageLoader from "../../components/PageLoader";
 
 export default function BlogTab() {
   const { toast, showToast, clearToast } = useToast();
@@ -57,7 +58,7 @@ export default function BlogTab() {
       </div>
 
       {posts === null ? (
-        <div className="admin-card">Loading posts…</div>
+        <PageLoader inline />
       ) : posts.length === 0 ? (
         <EmptyState icon="fileText" title="No posts yet" description="Add your first blog post." />
       ) : (

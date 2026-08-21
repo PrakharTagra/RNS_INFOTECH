@@ -4,6 +4,7 @@ import Icon from "../../components/Icon";
 import Badge from "../../components/Badge";
 import { getCustomer } from "../../services/customersService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
+import PageLoader from "../../components/PageLoader";
 
 function formatINR(n) {
   return "₹" + n.toLocaleString("en-IN");
@@ -33,7 +34,7 @@ export default function CustomerDetailPage() {
   }, [decodedEmail]);
 
   if (loading) {
-    return <div className="admin-card">Loading customer…</div>;
+    return <PageLoader />;
   }
 
   if (!customer) {

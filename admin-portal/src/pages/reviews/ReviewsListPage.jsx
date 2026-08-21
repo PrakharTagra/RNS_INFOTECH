@@ -8,6 +8,7 @@ import Toast from "../../components/Toast";
 import StatCard from "../../components/StatCard";
 import useToast from "../../hooks/useToast";
 import { getReviews, getReviewStats, deleteReview } from "../../services/reviewsService";
+import PageLoader from "../../components/PageLoader";
 
 function Stars({ rating }) {
   return (
@@ -103,7 +104,7 @@ export default function ReviewsListPage() {
       {error ? (
         <div className="admin-card"><div style={{ color: "var(--admin-danger)", marginBottom: 12 }}>{error}</div><button className="admin-btn admin-btn--ghost" type="button" onClick={() => load()}>Try again</button></div>
       ) : reviews === null ? (
-        <div className="admin-card">Loading reviews…</div>
+        <PageLoader />
       ) : filtered.length === 0 ? (
         <EmptyState icon="star" title="No reviews yet" description="Reviews customers submit will show up here." />
       ) : (

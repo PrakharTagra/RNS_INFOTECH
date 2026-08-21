@@ -5,6 +5,7 @@ import Badge from "../../components/Badge";
 import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import PermissionBoundary from "../../components/PermissionBoundary";
+import PageLoader from "../../components/PageLoader";
 
 const labels={"requested":"Requested","approved":"Approved","rejected":"Rejected","pickup-scheduled":"Pickup scheduled","received":"Received","refunded":"Refunded","replacement-initiated":"Replacement initiated","completed":"Completed","cancelled":"Cancelled"};
 export default function ReturnsPage(){
@@ -17,7 +18,7 @@ export default function ReturnsPage(){
   <div className="admin-card" style={{marginBottom:16,display:"flex",gap:8}}>
    {["","requested","approved","pickup-scheduled","received","refunded","rejected"].map(s=><button key={s} className={`admin-btn ${status===s?"admin-btn--primary":"admin-btn--ghost"}`} onClick={()=>setStatus(s)}>{s?labels[s]:"All"}</button>)}
   </div>
-  <div className="admin-card">{loading?<p>Loading returns…</p>:data.items.length===0?<p>No return requests.</p>:
+  <div className="admin-card">{loading?<PageLoader inline />:data.items.length===0?<p>No return requests.</p>:
    <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Reason</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>
    {data.items.map(r=><tr key={r._id}><td><Link to={`/orders/${r.order?._id}`}>{r.order?._id}</Link></td><td>{r.user?.name||"—"}<br/><small>{r.user?.email}</small></td><td>{r.reason}</td><td><Badge>{labels[r.status]||r.status}</Badge></td><td>{new Date(r.createdAt).toLocaleDateString("en-IN")}</td><td style={{display:"flex",gap:6,flexWrap:"wrap"}}>
    {r.status==="requested"&&<><button className="admin-btn admin-btn--sm admin-btn--primary" onClick={()=>run(approveReturn,r._id,"Return approved")}>Approve</button><button className="admin-btn admin-btn--sm" onClick={()=>run(rejectReturn,r._id,"Return rejected")}>Reject</button></>}

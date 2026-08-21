@@ -4,6 +4,7 @@ import FormField from "../../components/FormField";
 import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import { getCommerceSettings, updateCommerceSettings } from "../../services/settingsService";
+import PageLoader from "../../components/PageLoader";
 
 // Three numbers that used to live hardcoded in source files —
 // frontend.zip's CheckoutPage.jsx (free-shipping threshold/fee) and
@@ -43,7 +44,7 @@ export default function CommerceTab() {
     }
   }
 
-  if (!form) return <div className="admin-card">Loading commerce settings…</div>;
+  if (!form) return <PageLoader inline />;
 
   return (
     <form onSubmit={handleSubmit} className="admin-card">

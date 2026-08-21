@@ -7,6 +7,7 @@ import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import useToast from "../../hooks/useToast";
 import OrderShipModal from "./OrderShipModal";
+import PageLoader from "../../components/PageLoader";
 
 import { getOrder, confirmOrder, cancelOrder } from "../../services/ordersService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
@@ -77,7 +78,7 @@ export default function OrderDetailPage() {
   }
 
   if (loading) {
-    return <div className="admin-card">Loading order…</div>;
+    return <PageLoader />;
   }
 
   if (!order) {

@@ -6,6 +6,7 @@ import StatCard from "../../components/StatCard";
 import EmptyState from "../../components/EmptyState";
 import { getPayments, getPaymentStats } from "../../services/paymentsService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
+import PageLoader from "../../components/PageLoader";
 
 const STATUS_TABS = [
   { value: "", label: "All" },
@@ -89,7 +90,7 @@ export default function PaymentsListPage() {
         </div>
 
         {payments === null ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>Loading payments…</div>
+          <PageLoader inline />
         ) : payments.length === 0 ? (
           <EmptyState icon="creditCard" title="No payments found" description="Try adjusting your search or filter." />
         ) : (

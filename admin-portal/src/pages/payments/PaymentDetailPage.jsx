@@ -8,6 +8,7 @@ import useToast from "../../hooks/useToast";
 import PermissionBoundary from "../../components/PermissionBoundary";
 import { getPayment, refundPayment, reconcilePayment } from "../../services/paymentsService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
+import PageLoader from "../../components/PageLoader";
 
 const METHOD_LABEL = { upi: "UPI", card: "Card", netbanking: "Netbanking", cod: "Cash on delivery" };
 
@@ -46,7 +47,7 @@ export default function PaymentDetailPage() {
   }
 
   if (loading) {
-    return <div className="admin-card">Loading payment…</div>;
+    return <PageLoader />;
   }
 
   if (!payment) {

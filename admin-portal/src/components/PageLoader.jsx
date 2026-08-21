@@ -9,10 +9,29 @@ import React from "react";
  * looks the same everywhere. Used for: route-level Suspense
  * fallbacks and the "checking admin session" gate in App.jsx.
  */
-export default function PageLoader({ visible = true }) {
+/**
+ * PageLoader — the admin portal's equivalent of the storefront's
+ * branded splash loader (frontend/src/components/PageLoader.jsx).
+ * Kept as its own copy rather than a shared import since the two
+ * apps are separate packages/builds, but the markup, class names,
+ * and animation are intentionally identical so the brand moment
+ * looks the same everywhere. Used for: route-level Suspense
+ * fallbacks, the "checking admin session" gate in App.jsx, and every
+ * per-page data fetch (dashboard stats, list tables, detail pages).
+ *
+ * `inline` (default false) controls how it's positioned:
+ * - false: fixed full-viewport overlay — for moments where nothing
+ *   else on screen is meaningful yet (route transitions, auth check,
+ *   a whole page swapped out before its first successful fetch).
+ * - true: sits in normal document flow inside whatever container
+ *   renders it — for list/detail pages whose sidebar, topbar, and
+ *   filter/toolbar row are already up and shouldn't be hidden while
+ *   just the table or content body is still loading.
+ */
+export default function PageLoader({ visible = true, inline = false }) {
   return (
     <div
-      className={`rns-splash-loader${visible ? "" : " rns-splash-loader--hide"}`}
+      className={`rns-splash-loader${inline ? " rns-splash-loader--inline" : ""}${visible ? "" : " rns-splash-loader--hide"}`}
       role="status"
       aria-live="polite"
       aria-label="Loading RNS INFOTECH admin portal"
@@ -33,6 +52,14 @@ export default function PageLoader({ visible = true }) {
           opacity: 1;
           visibility: visible;
           transition: opacity 0.4s ease, visibility 0s linear 0s;
+        }
+        .rns-splash-loader--inline {
+          position: static;
+          inset: auto;
+          z-index: auto;
+          background: transparent;
+          padding: 64px 0;
+          width: 100%;
         }
         .rns-splash-loader--hide {
           opacity: 0;

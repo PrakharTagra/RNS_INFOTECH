@@ -7,6 +7,7 @@ import StatusToggle from "../../components/StatusToggle";
 import { getProduct, createProduct, updateProduct, uploadProductImages, replaceProductImage, deleteProductImage } from "../../services/productsService";
 import { getCategories } from "../../services/categoriesService";
 import { getBrands } from "../../services/brandsService";
+import PageLoader from "../../components/PageLoader";
 
 // Suggestions only — tags[] is freeform (search/filtering elsewhere),
 // fully decoupled from homepage curation. Featured & Best Sellers are
@@ -211,7 +212,7 @@ export default function ProductFormPage() {
     finally { setSaving(false); }
   }
 
-  if (loading) return <div className="admin-card">Loading product…</div>;
+  if (loading) return <PageLoader />;
 
   return (
     <PermissionBoundary permission="catalog.write"><div>

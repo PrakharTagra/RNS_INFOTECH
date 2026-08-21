@@ -5,6 +5,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import { getAccount, updateAccount } from "../../services/settingsService";
 import { changeAdminPassword } from "../../lib/adminApi";
+import PageLoader from "../../components/PageLoader";
 
 export default function AccountTab() {
   const { toast, showToast, clearToast } = useToast();
@@ -30,7 +31,7 @@ export default function AccountTab() {
     showToast("Account updated");
   }
 
-  if (!form) return <div className="admin-card">Loading account…</div>;
+  if (!form) return <PageLoader inline />;
 
   return (
     <form onSubmit={handleSubmit} className="admin-card">

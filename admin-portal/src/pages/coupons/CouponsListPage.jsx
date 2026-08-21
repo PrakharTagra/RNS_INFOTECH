@@ -9,6 +9,7 @@ import StatCard from "../../components/StatCard";
 import useToast from "../../hooks/useToast";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
 import CouponFormModal from "./CouponFormModal";
+import PageLoader from "../../components/PageLoader";
 import {
   getCoupons,
   getCouponStats,
@@ -121,7 +122,7 @@ export default function CouponsListPage() {
       {error ? (
         <div className="admin-card"><div style={{ color: "var(--admin-danger)", marginBottom: 12 }}>{error}</div><button className="admin-btn admin-btn--ghost" type="button" onClick={load}>Try again</button></div>
       ) : coupons === null ? (
-        <div className="admin-card">Loading coupons…</div>
+        <PageLoader />
       ) : filtered.length === 0 ? (
         <EmptyState icon="percent" title="No coupons yet" description="Add your first discount code." />
       ) : (

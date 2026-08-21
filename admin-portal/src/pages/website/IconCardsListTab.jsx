@@ -5,6 +5,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import IconCardFormModal from "./IconCardFormModal";
+import PageLoader from "../../components/PageLoader";
 
 // Shared by WhyChooseUsTab and SolutionsTab — both are the same
 // icon+title+body list shape (see mock/websiteMock.js), just backed by
@@ -59,7 +60,7 @@ export default function IconCardsListTab({ label, emptyIcon, service }) {
       </div>
 
       {items === null ? (
-        <div className="admin-card">Loading…</div>
+        <PageLoader inline />
       ) : items.length === 0 ? (
         <EmptyState icon={emptyIcon} title={`No ${label.toLowerCase()} yet`} description={`Add one to show it on the storefront homepage.`} />
       ) : (

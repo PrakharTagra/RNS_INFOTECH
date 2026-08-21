@@ -4,6 +4,7 @@ import Icon from "../../components/Icon";
 import StatCard from "../../components/StatCard";
 import EmptyState from "../../components/EmptyState";
 import { getCustomers, getCustomerStats } from "../../services/customersService";
+import PageLoader from "../../components/PageLoader";
 
 const SORT_TABS = [
   { value: "recent", label: "Most recent" },
@@ -82,7 +83,7 @@ export default function CustomersListPage() {
         </div>
 
         {customers === null ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>Loading customers…</div>
+          <PageLoader inline />
         ) : customers.length === 0 ? (
           <EmptyState icon="user" title="No customers found" description="Try adjusting your search." />
         ) : (

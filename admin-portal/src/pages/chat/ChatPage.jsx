@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Icon from "../../components/Icon";
 import StatCard from "../../components/StatCard";
 import EmptyState from "../../components/EmptyState";
+import PageLoader from "../../components/PageLoader";
 import {
   getThreads,
   getThread,
@@ -207,9 +208,7 @@ export default function ChatPage() {
       )}
 
       {threads === null ? (
-        <div className="admin-card" style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>
-          Loading conversations…
-        </div>
+        <PageLoader inline />
       ) : threads.length === 0 && !q ? (
         <EmptyState
           icon="message"

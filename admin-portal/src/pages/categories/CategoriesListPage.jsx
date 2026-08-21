@@ -7,6 +7,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import CategoryFormModal from "./CategoryFormModal";
 import { getCategories, updateCategory, deleteCategory } from "../../services/categoriesService";
+import PageLoader from "../../components/PageLoader";
 
 export default function CategoriesListPage() {
   const { toast, showToast, clearToast } = useToast();
@@ -70,7 +71,7 @@ export default function CategoriesListPage() {
       </div>
 
       {categories === null ? (
-        <div className="admin-card">Loading categories…</div>
+        <PageLoader />
       ) : categories.length === 0 ? (
         <EmptyState icon="tag" title="No categories yet" description="Add your first category to start organizing products." />
       ) : (

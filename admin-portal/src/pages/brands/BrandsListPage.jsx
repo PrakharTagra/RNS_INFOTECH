@@ -7,6 +7,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import BrandFormModal from "./BrandFormModal";
 import { getBrands, updateBrand, deleteBrand } from "../../services/brandsService";
+import PageLoader from "../../components/PageLoader";
 
 export default function BrandsListPage() {
   const { toast, showToast, clearToast } = useToast();
@@ -96,7 +97,7 @@ export default function BrandsListPage() {
           <button className="admin-btn admin-btn--ghost" type="button" onClick={load} disabled={loading}>Try again</button>
         </div>
       ) : brands === null ? (
-        <div className="admin-card">Loading brands…</div>
+        <PageLoader />
       ) : brands.length === 0 ? (
         <EmptyState icon="layers" title="No brands yet" description="Add your first brand to start tagging products." />
       ) : (

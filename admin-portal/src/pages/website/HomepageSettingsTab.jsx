@@ -5,6 +5,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import { getSettings, updateSettingsSection, publishSettings, getPreview } from "../../services/websiteService";
 import HomepagePreviewModal from "./HomepagePreviewModal";
+import PageLoader from "../../components/PageLoader";
 
 // Two independent forms (hero/promo) sharing one Save pattern — each
 // section saves on its own, so editing the hero doesn't require the
@@ -183,7 +184,7 @@ export default function HomepageSettingsTab() {
   }
 
   if (!settings) {
-    return <div className="admin-card">Loading homepage settings…</div>;
+    return <PageLoader inline />;
   }
 
   return (

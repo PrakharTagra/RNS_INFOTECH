@@ -7,6 +7,7 @@ import useToast from "../../hooks/useToast";
 import FaqFormModal from "./FaqFormModal";
 import { getFaqs, deleteFaq, previewFaq } from "../../services/contentService";
 import ContentPreviewModal from "./ContentPreviewModal";
+import PageLoader from "../../components/PageLoader";
 
 export default function FaqsTab() {
   const { toast, showToast, clearToast } = useToast();
@@ -58,7 +59,7 @@ export default function FaqsTab() {
       </div>
 
       {faqs === null ? (
-        <div className="admin-card">Loading FAQs…</div>
+        <PageLoader inline />
       ) : faqs.length === 0 ? (
         <EmptyState icon="fileText" title="No FAQs yet" description="Add your first question and answer." />
       ) : (

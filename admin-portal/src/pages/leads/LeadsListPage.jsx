@@ -9,6 +9,7 @@ import StatCard from "../../components/StatCard";
 import useToast from "../../hooks/useToast";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
 import { getLeads, getLeadStats, setLeadStatus, deleteLead } from "../../services/leadsService";
+import PageLoader from "../../components/PageLoader";
 
 const TYPE_TABS = [
   { key: "all", label: "All" },
@@ -172,7 +173,7 @@ export default function LeadsListPage() {
             </button>
           </div>
         ) : leads === null ? (
-          <div className="admin-card">Loading leads…</div>
+          <PageLoader />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="inbox"

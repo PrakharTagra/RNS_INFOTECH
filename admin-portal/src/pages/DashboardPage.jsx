@@ -5,6 +5,7 @@ import Badge from "../components/Badge";
 import Icon from "../components/Icon";
 import { getDashboardSummary } from "../services/dashboardService";
 import { STATUS_TONE, statusLabel } from "../utils/format";
+import PageLoader from "../components/PageLoader";
 
 export default function DashboardPage() {
   const [data, setData] = useState(null);
@@ -18,7 +19,7 @@ export default function DashboardPage() {
   }, []);
 
   if (!data) {
-    return <div className="admin-card">Loading dashboard…</div>;
+    return <PageLoader />;
   }
 
   return (

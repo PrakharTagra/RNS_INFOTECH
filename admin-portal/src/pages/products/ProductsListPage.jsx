@@ -12,6 +12,7 @@ import { getProductsPage, deleteProduct, bulkProductAction, updateProductCuratio
 import { getCategories } from "../../services/categoriesService";
 import { getBrands } from "../../services/brandsService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
+import PageLoader from "../../components/PageLoader";
 
 const PAGE_SIZE = 20;
 
@@ -124,7 +125,7 @@ export default function ProductsListPage() {
           <button className="admin-btn admin-btn--ghost admin-btn--sm" type="button" onClick={() => setSelected([])}>Clear selection</button>
         </div>}
 
-        {loading ? <div style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>Loading products…</div> : products.length === 0 ? <EmptyState icon="package" title="No products found" description="Try adjusting your filters, or add a new product." /> : <>
+        {loading ? <PageLoader inline /> : products.length === 0 ? <EmptyState icon="package" title="No products found" description="Try adjusting your filters, or add a new product." /> : <>
           <div className="admin-table-wrap"><table className="admin-table"><thead><tr>
             <th style={{ width: 42 }}><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all products on this page" /></th><th>Product</th><th>Category</th><th>Brand</th><th>Price</th><th>Stock</th><th>Status</th><th>Featured</th><th>Best Seller</th><th style={{ textAlign: "right" }}>Actions</th>
           </tr></thead><tbody>{products.map((p) => <tr key={p.id}>

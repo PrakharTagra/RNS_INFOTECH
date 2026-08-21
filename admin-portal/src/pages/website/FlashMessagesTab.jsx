@@ -8,6 +8,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import FlashMessageFormModal from "./FlashMessageFormModal";
 import { getFlashMessages, updateFlashMessage, deleteFlashMessage, reorderFlashMessages } from "../../services/flashMessagesService";
+import PageLoader from "../../components/PageLoader";
 
 const FLASH_TYPES = [
   { value: "login", label: "Login / account" },
@@ -102,7 +103,7 @@ export default function FlashMessagesTab() {
       </div>
 
       {items === null ? (
-        <div className="admin-card">Loading flash messages…</div>
+        <PageLoader inline />
       ) : items.length === 0 ? (
         <EmptyState icon="bell" title="No flash messages yet" description="Add one — a sale, a login nudge, a newsletter prompt, anything." />
       ) : (

@@ -4,6 +4,7 @@ import FormField from "../../components/FormField";
 import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import { getStoreProfile, updateStoreProfile } from "../../services/settingsService";
+import PageLoader from "../../components/PageLoader";
 
 // This is the shape that flows through to the storefront's contact
 // details, Help page, and invoice footer via GET /store-profile — see
@@ -35,7 +36,7 @@ export default function StoreProfileTab() {
     }
   }
 
-  if (!form) return <div className="admin-card">Loading store profile…</div>;
+  if (!form) return <PageLoader inline />;
 
   return (
     <form onSubmit={handleSubmit} className="admin-card">

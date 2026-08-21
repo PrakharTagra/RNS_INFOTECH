@@ -5,6 +5,7 @@ import Icon from "../../components/Icon";
 import Badge from "../../components/Badge";
 import StatCard from "../../components/StatCard";
 import EmptyState from "../../components/EmptyState";
+import PageLoader from "../../components/PageLoader";
 import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import StockAdjustModal from "./StockAdjustModal";
@@ -140,9 +141,7 @@ export default function InventoryPage() {
           </div>
 
           {products === null ? (
-            <div style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>
-              Loading inventory…
-            </div>
+            <PageLoader inline />
           ) : products.length === 0 ? (
             <EmptyState icon="warehouse" title="No products found" description="Try adjusting your search or filter." />
           ) : (
@@ -219,9 +218,7 @@ export default function InventoryPage() {
           </div>
 
           {history === null ? (
-            <div style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>
-              Loading history…
-            </div>
+            <PageLoader inline />
           ) : history.length === 0 ? (
             <EmptyState icon="clock" title="No adjustments yet" description="Stock changes you log from Stock levels will show up here." />
           ) : (

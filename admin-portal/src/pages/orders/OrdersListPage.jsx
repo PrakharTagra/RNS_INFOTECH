@@ -7,6 +7,7 @@ import StatCard from "../../components/StatCard";
 import EmptyState from "../../components/EmptyState";
 import { getOrders, getOrderStats } from "../../services/ordersService";
 import { STATUS_TONE, statusLabel } from "../../utils/format";
+import PageLoader from "../../components/PageLoader";
 
 // Simplified 4-state order lifecycle — see PROGRESS_ORDER_SIMPLIFICATION.md.
 const STATUS_TABS = [
@@ -88,7 +89,7 @@ export default function OrdersListPage() {
         </div>
 
         {orders === null ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--admin-ink-faint)" }}>Loading orders…</div>
+          <PageLoader inline />
         ) : orders.length === 0 ? (
           <EmptyState icon="truck" title="No orders found" description="Try adjusting your search or filter." />
         ) : (

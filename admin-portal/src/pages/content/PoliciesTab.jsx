@@ -5,6 +5,7 @@ import Toast from "../../components/Toast";
 import useToast from "../../hooks/useToast";
 import { getPolicies, updatePolicy, publishPolicy, previewPolicy, POLICY_LABELS } from "../../services/contentService";
 import ContentPreviewModal from "./ContentPreviewModal";
+import PageLoader from "../../components/PageLoader";
 
 const PAGES = Object.keys(POLICY_LABELS);
 
@@ -65,7 +66,7 @@ export default function PoliciesTab() {
     showToast(`${POLICY_LABELS[page]} updated`);
   }
 
-  if (!policies || !form) return <div className="admin-card">Loading policies…</div>;
+  if (!policies || !form) return <PageLoader inline />;
 
   return (
     <div>
