@@ -9,7 +9,9 @@ export default function Sidebar({ collapsed, onToggle }) {
   return (
     <aside className="admin-sidebar">
       <div className="admin-sidebar__brand">
-        <div className="admin-sidebar__brand-mark">RN</div>
+        <div className="admin-sidebar__brand-mark">
+          <img src="/assets/rns_logo.jpg" alt="" className="admin-sidebar__brand-logo" />
+        </div>
         <div>
           <div className="admin-sidebar__brand-text">RNS INFOTECH</div>
           <div className="admin-sidebar__brand-sub">Admin Portal</div>

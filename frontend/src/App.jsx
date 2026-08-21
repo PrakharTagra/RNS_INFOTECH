@@ -6,7 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LiveChatWidget from "./components/LiveChatWidget";
 import FlashMessagePopup from "./components/FlashMessagePopup";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { PageLoader } from "./components/ui/Stateviews";
+import PageLoader from "./components/PageLoader";
 import { useScrollToTop } from "./hooks/useMisc";
 
 import { AuthProvider } from "./context/AuthContext";

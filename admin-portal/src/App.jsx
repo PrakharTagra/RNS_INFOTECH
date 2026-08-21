@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import AdminLayout from "./layouts/AdminLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
+import PageLoader from "./components/PageLoader";
 import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -95,7 +96,7 @@ function RequireAdmin() {
   }, []);
 
   if (status !== "authenticated") {
-    return <div className="admin-auth-loading" aria-live="polite">Checking admin session…</div>;
+    return <PageLoader />;
   }
 
   return <ErrorBoundary resetKey={location.pathname}><Outlet /></ErrorBoundary>;
@@ -111,33 +112,33 @@ export default function App() {
         <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
         <Route element={<RequireAdmin />}>
           <Route element={<AdminLayout />}>
-            <Route path="/" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><DashboardPage /></Suspense>} />
-            <Route path="/products" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ProductsListPage /></Suspense>} />
-            <Route path="/products/new" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ProductFormPage /></Suspense>} />
-            <Route path="/products/:id" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ProductDetailPage /></Suspense>} />
-            <Route path="/products/:id/edit" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ProductFormPage /></Suspense>} />
-            <Route path="/categories" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><CategoriesListPage /></Suspense>} />
-            <Route path="/brands" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><BrandsListPage /></Suspense>} />
-            <Route path="/inventory" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><InventoryPage /></Suspense>} />
-            <Route path="/orders" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><OrdersListPage /></Suspense>} />
-            <Route path="/orders/:id" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><OrderDetailPage /></Suspense>} />
-            <Route path="/payments" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><PaymentsListPage /></Suspense>} />
-            <Route path="/payments/:id" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><PaymentDetailPage /></Suspense>} />
-            <Route path="/customers" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><CustomersListPage /></Suspense>} />
-            <Route path="/customers/:email" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><CustomerDetailPage /></Suspense>} />
-            <Route path="/leads" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><LeadsListPage /></Suspense>} />
-            <Route path="/chat" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ChatPage /></Suspense>} />
-            <Route path="/website" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><WebsitePage /></Suspense>} />
-            <Route path="/coupons" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><CouponsListPage /></Suspense>} />
-            <Route path="/reviews" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ReviewsListPage /></Suspense>} />
-            <Route path="/content" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><ContentPage /></Suspense>} />
-            <Route path="/settings" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><SettingsPage /></Suspense>} />
-            <Route path="/staff" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><StaffPage /></Suspense>} />
-            <Route path="/audit" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><AuditLogPage /></Suspense>} />
+            <Route path="/" element={<Suspense fallback={<PageLoader />}><DashboardPage /></Suspense>} />
+            <Route path="/products" element={<Suspense fallback={<PageLoader />}><ProductsListPage /></Suspense>} />
+            <Route path="/products/new" element={<Suspense fallback={<PageLoader />}><ProductFormPage /></Suspense>} />
+            <Route path="/products/:id" element={<Suspense fallback={<PageLoader />}><ProductDetailPage /></Suspense>} />
+            <Route path="/products/:id/edit" element={<Suspense fallback={<PageLoader />}><ProductFormPage /></Suspense>} />
+            <Route path="/categories" element={<Suspense fallback={<PageLoader />}><CategoriesListPage /></Suspense>} />
+            <Route path="/brands" element={<Suspense fallback={<PageLoader />}><BrandsListPage /></Suspense>} />
+            <Route path="/inventory" element={<Suspense fallback={<PageLoader />}><InventoryPage /></Suspense>} />
+            <Route path="/orders" element={<Suspense fallback={<PageLoader />}><OrdersListPage /></Suspense>} />
+            <Route path="/orders/:id" element={<Suspense fallback={<PageLoader />}><OrderDetailPage /></Suspense>} />
+            <Route path="/payments" element={<Suspense fallback={<PageLoader />}><PaymentsListPage /></Suspense>} />
+            <Route path="/payments/:id" element={<Suspense fallback={<PageLoader />}><PaymentDetailPage /></Suspense>} />
+            <Route path="/customers" element={<Suspense fallback={<PageLoader />}><CustomersListPage /></Suspense>} />
+            <Route path="/customers/:email" element={<Suspense fallback={<PageLoader />}><CustomerDetailPage /></Suspense>} />
+            <Route path="/leads" element={<Suspense fallback={<PageLoader />}><LeadsListPage /></Suspense>} />
+            <Route path="/chat" element={<Suspense fallback={<PageLoader />}><ChatPage /></Suspense>} />
+            <Route path="/website" element={<Suspense fallback={<PageLoader />}><WebsitePage /></Suspense>} />
+            <Route path="/coupons" element={<Suspense fallback={<PageLoader />}><CouponsListPage /></Suspense>} />
+            <Route path="/reviews" element={<Suspense fallback={<PageLoader />}><ReviewsListPage /></Suspense>} />
+            <Route path="/content" element={<Suspense fallback={<PageLoader />}><ContentPage /></Suspense>} />
+            <Route path="/settings" element={<Suspense fallback={<PageLoader />}><SettingsPage /></Suspense>} />
+            <Route path="/staff" element={<Suspense fallback={<PageLoader />}><StaffPage /></Suspense>} />
+            <Route path="/audit" element={<Suspense fallback={<PageLoader />}><AuditLogPage /></Suspense>} />
             {navItemsFlat.filter((item) => item.path !== "/" && !BUILT_PATHS.has(item.path)).map((item) => (
-              <Route key={item.path} path={`${item.path}/*`} element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><StubPage /></Suspense>} />
+              <Route key={item.path} path={`${item.path}/*`} element={<Suspense fallback={<PageLoader />}><StubPage /></Suspense>} />
             ))}
-            <Route path="*" element={<Suspense fallback={<div className="admin-auth-loading" aria-live="polite">Loading page…</div>}><NotFoundPage /></Suspense>} />
+            <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFoundPage /></Suspense>} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

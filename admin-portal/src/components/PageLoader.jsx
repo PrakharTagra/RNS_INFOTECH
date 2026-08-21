@@ -1,12 +1,13 @@
 import React from "react";
 
 /**
- * PageLoader — full-viewport branded splash shown while the homepage's
- * backend-driven content (hero, banners, curated product rails) is still
- * loading. Sits on top of the page as a fixed overlay so the homepage
- * underneath can mount and fetch immediately; once `visible` flips to
- * false this just fades out and stops intercepting clicks, it never
- * unmounts abruptly mid-animation.
+ * PageLoader — the admin portal's equivalent of the storefront's
+ * branded splash loader (frontend/src/components/PageLoader.jsx).
+ * Kept as its own copy rather than a shared import since the two
+ * apps are separate packages/builds, but the markup, class names,
+ * and animation are intentionally identical so the brand moment
+ * looks the same everywhere. Used for: route-level Suspense
+ * fallbacks and the "checking admin session" gate in App.jsx.
  */
 export default function PageLoader({ visible = true }) {
   return (
@@ -14,7 +15,7 @@ export default function PageLoader({ visible = true }) {
       className={`rns-splash-loader${visible ? "" : " rns-splash-loader--hide"}`}
       role="status"
       aria-live="polite"
-      aria-label="Loading RNS INFOTECH"
+      aria-label="Loading RNS INFOTECH admin portal"
     >
       <div className="rns-splash-loader__mark">
         <img src="/assets/rns_logo.jpg" alt="" className="rns-splash-loader__logo" />
@@ -28,7 +29,7 @@ export default function PageLoader({ visible = true }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--rns-bg);
+          background: var(--admin-bg);
           opacity: 1;
           visibility: visible;
           transition: opacity 0.4s ease, visibility 0s linear 0s;

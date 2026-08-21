@@ -107,13 +107,3 @@ export function InlineSpinner({ size = 16, label = "Loading" }) {
     />
   );
 }
-
-/** PageLoader — full-section loading state for route-level Suspense fallbacks. */
-export function PageLoader({ label = "Loading page…" }) {
-  return (
-    <div className="rns-page-loader">
-      <InlineSpinner size={22} />
-      <span>{label}</span>
-    </div>
-  );
-}

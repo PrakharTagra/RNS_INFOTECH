@@ -58,15 +58,10 @@
   border-top-color: var(--rns-primary);
   animation: rns-spin 0.7s linear infinite;
 }
-.rns-page-loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 120px 0;
-  color: var(--rns-ink-soft);
-  font-size: 14px;
-}
+/* Old inline "spinner + label" full-page loader lived here; removed —
+   every full-page loading state (route Suspense fallbacks, homepage
+   data fetch, admin session check) now uses the branded splash overlay
+   in components/PageLoader.jsx (class .rns-splash-loader) instead. */
 
 /* ---------- Empty / error state block ---------- */
 .rns-state {
