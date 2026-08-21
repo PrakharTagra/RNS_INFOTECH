@@ -64,7 +64,7 @@ export default function TestimonialsTab() {
       </div>
 
       {items === null ? (
-        <PageLoader inline />
+        <PageLoader />
       ) : items.length === 0 ? (
         <EmptyState icon="star" title="No testimonials yet" description="Add one to show it on the storefront homepage." />
       ) : (

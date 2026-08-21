@@ -83,7 +83,7 @@ export default function CustomersListPage() {
         </div>
 
         {customers === null ? (
-          <PageLoader inline />
+          <PageLoader />
         ) : customers.length === 0 ? (
           <EmptyState icon="user" title="No customers found" description="Try adjusting your search." />
         ) : (

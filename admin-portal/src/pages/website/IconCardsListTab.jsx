@@ -60,7 +60,7 @@ export default function IconCardsListTab({ label, emptyIcon, service }) {
       </div>
 
       {items === null ? (
-        <PageLoader inline />
+        <PageLoader />
       ) : items.length === 0 ? (
         <EmptyState icon={emptyIcon} title={`No ${label.toLowerCase()} yet`} description={`Add one to show it on the storefront homepage.`} />
       ) : (

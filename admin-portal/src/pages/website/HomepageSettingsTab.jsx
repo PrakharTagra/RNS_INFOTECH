@@ -184,7 +184,7 @@ export default function HomepageSettingsTab() {
   }
 
   if (!settings) {
-    return <PageLoader inline />;
+    return <PageLoader />;
   }
 
   return (

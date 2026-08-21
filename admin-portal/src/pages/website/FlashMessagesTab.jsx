@@ -103,7 +103,7 @@ export default function FlashMessagesTab() {
       </div>
 
       {items === null ? (
-        <PageLoader inline />
+        <PageLoader />
       ) : items.length === 0 ? (
         <EmptyState icon="bell" title="No flash messages yet" description="Add one — a sale, a login nudge, a newsletter prompt, anything." />
       ) : (

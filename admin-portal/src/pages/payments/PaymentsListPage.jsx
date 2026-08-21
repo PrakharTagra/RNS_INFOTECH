@@ -90,7 +90,7 @@ export default function PaymentsListPage() {
         </div>
 
         {payments === null ? (
-          <PageLoader inline />
+          <PageLoader />
         ) : payments.length === 0 ? (
           <EmptyState icon="creditCard" title="No payments found" description="Try adjusting your search or filter." />
         ) : (

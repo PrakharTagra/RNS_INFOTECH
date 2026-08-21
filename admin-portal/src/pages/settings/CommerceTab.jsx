@@ -44,7 +44,7 @@ export default function CommerceTab() {
     }
   }
 
-  if (!form) return <PageLoader inline />;
+  if (!form) return <PageLoader />;
 
   return (
     <form onSubmit={handleSubmit} className="admin-card">

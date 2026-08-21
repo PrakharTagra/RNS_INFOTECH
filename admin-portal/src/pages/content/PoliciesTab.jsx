@@ -66,7 +66,7 @@ export default function PoliciesTab() {
     showToast(`${POLICY_LABELS[page]} updated`);
   }
 
-  if (!policies || !form) return <PageLoader inline />;
+  if (!policies || !form) return <PageLoader />;
 
   return (
     <div>

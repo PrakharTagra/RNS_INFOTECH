@@ -208,7 +208,7 @@ export default function ChatPage() {
       )}
 
       {threads === null ? (
-        <PageLoader inline />
+        <PageLoader />
       ) : threads.length === 0 && !q ? (
         <EmptyState
           icon="message"

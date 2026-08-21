@@ -59,7 +59,7 @@ export default function FaqsTab() {
       </div>
 
       {faqs === null ? (
-        <PageLoader inline />
+        <PageLoader />
       ) : faqs.length === 0 ? (
         <EmptyState icon="fileText" title="No FAQs yet" description="Add your first question and answer." />
       ) : (

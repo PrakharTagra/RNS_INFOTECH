@@ -89,7 +89,7 @@ export default function OrdersListPage() {
         </div>
 
         {orders === null ? (
-          <PageLoader inline />
+          <PageLoader />
         ) : orders.length === 0 ? (
           <EmptyState icon="truck" title="No orders found" description="Try adjusting your search or filter." />
         ) : (

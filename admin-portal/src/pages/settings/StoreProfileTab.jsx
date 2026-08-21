@@ -36,7 +36,7 @@ export default function StoreProfileTab() {
     }
   }
 
-  if (!form) return <PageLoader inline />;
+  if (!form) return <PageLoader />;
 
   return (
     <form onSubmit={handleSubmit} className="admin-card">

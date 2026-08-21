@@ -58,7 +58,7 @@ export default function BlogTab() {
       </div>
 
       {posts === null ? (
-        <PageLoader inline />
+        <PageLoader />
       ) : posts.length === 0 ? (
         <EmptyState icon="fileText" title="No posts yet" description="Add your first blog post." />
       ) : (

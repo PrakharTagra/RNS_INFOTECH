@@ -141,7 +141,7 @@ export default function InventoryPage() {
           </div>
 
           {products === null ? (
-            <PageLoader inline />
+            <PageLoader />
           ) : products.length === 0 ? (
             <EmptyState icon="warehouse" title="No products found" description="Try adjusting your search or filter." />
           ) : (
@@ -218,7 +218,7 @@ export default function InventoryPage() {
           </div>
 
           {history === null ? (
-            <PageLoader inline />
+            <PageLoader />
           ) : history.length === 0 ? (
             <EmptyState icon="clock" title="No adjustments yet" description="Stock changes you log from Stock levels will show up here." />
           ) : (
