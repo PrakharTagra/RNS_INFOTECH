@@ -3,50 +3,46 @@ import Button from "./Button";
 
 export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCta, stats = [] }) {
   return (
-    <section style={{ position: "relative", overflow: "hidden", borderBottom: "1px solid var(--rns-line)" }}>
-      {/* quiet schematic backdrop — static, low-contrast, no motion */}
+    <section
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        background: "var(--rns-bg-alt)",
+        borderBottom: "1px solid var(--rns-line)",
+      }}
+    >
+      {/* cutting-mat grid — the desk surface this whole brand sits on */}
       <svg
         aria-hidden="true"
         width="100%"
         height="100%"
-        style={{ position: "absolute", inset: 0, opacity: 0.5 }}
+        style={{ position: "absolute", inset: 0, opacity: 0.7 }}
         preserveAspectRatio="none"
       >
         <defs>
-          <pattern id="rns-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M40 0H0V40" fill="none" stroke="#eef0f6" strokeWidth="1" />
+          <pattern id="rns-mat-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+            <path d="M28 0H0V28" fill="none" stroke="var(--rns-line)" strokeWidth="1" />
+          </pattern>
+          <pattern id="rns-mat-grid-major" width="140" height="140" patternUnits="userSpaceOnUse">
+            <path d="M140 0H0V140" fill="none" stroke="var(--rns-line-strong)" strokeWidth="1" />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#rns-grid)" />
+        <rect width="100%" height="100%" fill="url(#rns-mat-grid)" />
+        <rect width="100%" height="100%" fill="url(#rns-mat-grid-major)" />
       </svg>
 
-      {/* soft brand-colour glow, sits behind the grid — adds depth
-          without introducing any motion or heavy colour */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: "-20%",
-          right: "-10%",
-          width: "56%",
-          maxWidth: 620,
-          aspectRatio: "1 / 1",
-          background: "var(--rns-gradient-brand)",
-          opacity: 0.12,
-          filter: "blur(80px)",
-          borderRadius: "50%",
-          pointerEvents: "none",
-        }}
-      />
+      {/* ruler edge along the very top — ticks like the ruled border
+          printed on a real cutting mat */}
+      <div aria-hidden="true" className="rns-hero-ruler" />
 
       <div
         className="rns-container"
         style={{
           position: "relative",
-          padding: "40px 24px 40px",
+          padding: "56px 24px 44px",
           display: "grid",
-          gridTemplateColumns: "minmax(0,640px) 1fr",
-          gap: 40,
+          gridTemplateColumns: "minmax(0,620px) 1fr",
+          gap: 44,
           alignItems: "center",
         }}
       >
@@ -57,68 +53,134 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
               {eyebrow}
             </span>
           )}
-          <h1 style={{ fontSize: "clamp(34px, 4.4vw, 56px)", lineHeight: 1.08, marginTop: 16 }}>
+          <h1 style={{ fontSize: "clamp(34px, 4.4vw, 58px)", lineHeight: 1.05, marginTop: 18 }}>
             {title}
           </h1>
           <p style={{ marginTop: 20, fontSize: 17, color: "var(--rns-ink-soft)", maxWidth: 520 }}>
             {subtitle}
           </p>
-          <div style={{ display: "flex", gap: 12, marginTop: 24, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 12, marginTop: 26, flexWrap: "wrap" }}>
             <Button as="a" href={primaryCta.href} variant="primary">{primaryCta.label}</Button>
             <Button as="a" href={secondaryCta.href} variant="ghost">{secondaryCta.label}</Button>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 28,
-              marginTop: 28,
-              paddingTop: 20,
-              borderTop: "1px solid var(--rns-line)",
-              flexWrap: "wrap",
-            }}
-          >
-            {stats.map((s) => (
-              <div key={s.label}>
-                <div style={{ fontFamily: "var(--rns-font-display)", fontSize: 26, fontWeight: 700 }}>
-                  {s.value}
-                </div>
-                <div style={{ fontSize: 13, color: "var(--rns-ink-faint)", marginTop: 4 }}>
-                  {s.label}
-                </div>
+          {stats.length > 0 && (
+            <div style={{ marginTop: 30, paddingTop: 4 }}>
+              <div className="rns-trace" aria-hidden="true" style={{ marginBottom: 20 }}>
+                {stats.map((_, i) => (
+                  <span
+                    key={i}
+                    className="rns-trace__node"
+                    style={{ left: `${((i + 1) / (stats.length + 1)) * 100}%` }}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+              <div style={{ display: "flex", gap: 30, flexWrap: "wrap" }}>
+                {stats.map((s) => (
+                  <div key={s.label}>
+                    <div style={{ fontFamily: "var(--rns-font-display)", fontSize: 27, fontWeight: 700 }}>
+                      {s.value}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11.5,
+                        fontFamily: "var(--rns-font-mono)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "var(--rns-ink-faint)",
+                        marginTop: 5,
+                      }}
+                    >
+                      {s.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* schematic "device" panel — a flat, line-drawn stand-in image */}
-        <div
-          aria-hidden="true"
-          className="rns-hero-panel"
-          style={{
-            border: "1px solid var(--rns-line)",
-            borderRadius: "var(--rns-r-lg)",
-            minHeight: 320,
-            position: "relative",
-            overflow: "hidden",
-            boxShadow: "var(--rns-shadow-lg)",
-          }}
-        >
-          <img
-            src="/assets/rns_hero.png"
-            alt=""
+        {/* "pinned reference photo" panel — a product shot on the mat,
+            held down with a strip of tape. The one deliberate flourish
+            in the hero; everything else stays quiet. */}
+        <div className="rns-hero-panel" aria-hidden="true" style={{ position: "relative" }}>
+          <div
             style={{
-              width: "100%",
-              height: "100%",
-              minHeight: 320,
-              objectFit: "cover",
-              display: "block",
+              position: "relative",
+              border: "1px solid var(--rns-line-strong)",
+              borderRadius: "var(--rns-r-lg)",
+              minHeight: 340,
+              overflow: "hidden",
+              boxShadow: "var(--rns-shadow-lg)",
+              background: "var(--rns-bg)",
+            }}
+          >
+            <img
+              src="/assets/rns_hero.png"
+              alt=""
+              style={{
+                width: "100%",
+                height: "100%",
+                minHeight: 340,
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </div>
+          {/* cut-line — a dashed offset border, like the outline scored
+              into the mat around the photo */}
+          <div
+            style={{
+              position: "absolute",
+              inset: -10,
+              border: "2px dashed var(--rns-line-strong)",
+              borderRadius: "calc(var(--rns-r-lg) + 8px)",
+              pointerEvents: "none",
+            }}
+          />
+          {/* tape strip */}
+          <div
+            style={{
+              position: "absolute",
+              top: -16,
+              left: "50%",
+              width: 108,
+              height: 34,
+              background: "rgba(255,177,153,0.55)",
+              border: "1px solid rgba(255,177,153,0.8)",
+              transform: "translateX(-50%) rotate(-3deg)",
+              boxShadow: "0 2px 6px rgba(27,27,22,0.12)",
             }}
           />
         </div>
       </div>
 
       <style>{`
+        .rns-hero-ruler {
+          height: 22px;
+          background: var(--rns-bg-alt);
+          border-bottom: 1px solid var(--rns-line-strong);
+          background-image: repeating-linear-gradient(
+            90deg,
+            var(--rns-line-strong) 0,
+            var(--rns-line-strong) 1px,
+            transparent 1px,
+            transparent 40px
+          );
+          position: relative;
+        }
+        .rns-hero-ruler::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image: repeating-linear-gradient(
+            90deg,
+            var(--rns-line) 0,
+            var(--rns-line) 1px,
+            transparent 1px,
+            transparent 10px
+          );
+        }
         @media (max-width: 860px) {
           .rns-hero-panel { display: none; }
         }

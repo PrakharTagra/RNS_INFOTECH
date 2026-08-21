@@ -8,10 +8,10 @@ const DEFAULT_DURATION_MS = 5000;
 // (no icon font dependency) since this renders above the navbar on
 // every page and needs to stay lightweight.
 const TYPE_STYLES = {
-  login: { accent: "#8ea2ff", glyph: "🔑" },
-  sale: { accent: "#ff8a5c", glyph: "🔥" },
-  newsletter: { accent: "#5ad1a5", glyph: "✉️" },
-  custom: { accent: "#8ea2ff", glyph: "📣" },
+  login: { accent: "#8FC3D9", glyph: "🔑" },
+  sale: { accent: "#FF8A5C", glyph: "🔥" },
+  newsletter: { accent: "#9ED9B0", glyph: "✉️" },
+  custom: { accent: "#FFB199", glyph: "📣" },
 };
 
 /**

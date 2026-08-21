@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
 @import "./tokens.css";
 @import "./primitives.css";
 
@@ -135,24 +135,41 @@ img { max-width: 100%; display: block; }
   font-size: 15px;
 }
 
-/* Signature element: a thin "signal trace" — a hairline with
-   inline nodes, echoing a circuit trace. Used between sections
-   instead of animation or gradients. Static, quiet, on-brand. */
+/* Signature element: a "ruler edge" — a hairline dressed as the ruled
+   edge of a cutting mat, with alternating tick heights and one node
+   picked out in marker orange. Used between sections instead of
+   animation or gradients. Static, quiet, on-brand. */
 .rns-trace {
   position: relative;
   height: 1px;
-  background: var(--rns-line);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--rns-line-strong) 0,
+    var(--rns-line-strong) 1px,
+    transparent 1px,
+    transparent 10px
+  );
   width: 100%;
 }
 
 .rns-trace__node {
   position: absolute;
   top: 50%;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--rns-line-strong);
+  width: 2px;
+  height: 11px;
+  border-radius: 1px;
+  background: var(--rns-primary);
   transform: translate(-50%, -50%);
+}
+
+/* Signature ink stroke — a hand-drawn wavy underline standing in for
+   a pen mark. Used sparingly: nav link hover/active, one hero word. */
+.rns-ink-mark {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--rns-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
 }
 
 /* Buttons */
