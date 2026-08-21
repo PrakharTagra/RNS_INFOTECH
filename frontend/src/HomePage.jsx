@@ -13,12 +13,18 @@ import FAQs from "./components/FAQs";
 import CTASection from "./components/CTASection";
 import Footer from "./components/Footer";
 import SEO from "./components/SEO";
+import PageLoader from "./components/PageLoader";
 import Reveal from "./components/ui/Reveal";
 import { Trace } from "./components/SectionHeader";
 import { apiRequest, getHomepageProducts } from "./lib/api";
 import { getFaqContent } from "./lib/contentApi";
 
 import { nav, footer } from "./data/siteData";
+
+// How long the branded loader stays up at minimum, so it reads as an
+// intentional splash instead of a flash — even on a fast connection or
+// warm cache. The loader still waits past this if the backend is slower.
+const MIN_LOADER_MS = 1100;
 
 const ORGANIZATION_JSON_LD = {
   "@context": "https://schema.org",
@@ -40,6 +46,17 @@ export default function HomePage() {
   const [homepageProducts, setHomepageProducts] = useState({ featured: [], bestSellers: [], newArrivals: [], discounted: [] });
   const [website, setWebsite] = useState({ hero: null, promo: null, whyChooseUs: [], solutions: [], testimonials: [] });
   const [faqs, setFaqs] = useState([]);
+  // Loader hides once BOTH the homepage data has arrived AND the minimum
+  // splash time has elapsed — whichever finishes last. Data resolves via
+  // Promise.allSettled below so one slow/failed section (e.g. the FAQ
+  // fetch) can never leave the loader stuck forever.
+  const [dataReady, setDataReady] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), MIN_LOADER_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -69,6 +86,8 @@ export default function HomePage() {
         setWebsite(websiteResponse?.website || { hero: null, promo: null, whyChooseUs: [], solutions: [], testimonials: [] });
         setFaqs(faqResponse || []);
       }
+
+      if (!ignore) setDataReady(true);
     }
 
     load();
@@ -79,6 +98,7 @@ export default function HomePage() {
 
   return (
     <>
+      <PageLoader visible={!(dataReady && minTimeElapsed)} />
       <SEO
         title="Pen Tablets, Pen Displays & Stylus Hardware"
         description="RNS INFOTECH is an authorized dealer of pen tablets, pen displays, and stylus hardware — genuine products, manufacturer warranty, and fast dispatch for artists, studios, and businesses."
