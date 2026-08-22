@@ -43,7 +43,7 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
         className="rns-container"
         style={{
           position: "relative",
-          padding: "40px 24px 40px",
+          padding: "10px 24px 40px",
           display: "grid",
           gridTemplateColumns: "minmax(0,640px) 1fr",
           gap: 40,
@@ -57,7 +57,7 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
               {eyebrow}
             </span>
           )}
-          <h1 style={{ fontSize: "clamp(34px, 4.4vw, 56px)", lineHeight: 1.08, marginTop: 16 }}>
+          <h1 style={{ fontSize: "clamp(34px, 4.4vw, 54px)", lineHeight: 1.08, marginTop: 10 }}>
             {title}
           </h1>
           <p style={{ marginTop: 20, fontSize: 17, color: "var(--rns-ink-soft)", maxWidth: 520 }}>
@@ -72,8 +72,8 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
             style={{
               display: "flex",
               gap: 28,
-              marginTop: 28,
-              paddingTop: 20,
+              marginTop: 16,
+              paddingTop: 16,
               borderTop: "1px solid var(--rns-line)",
               flexWrap: "wrap",
             }}
@@ -96,12 +96,12 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
           aria-hidden="true"
           className="rns-hero-panel"
           style={{
-            border: "1px solid var(--rns-line)",
+            // border: "1px solid var(--rns-line)",
             borderRadius: "var(--rns-r-lg)",
             minHeight: 320,
             position: "relative",
             overflow: "hidden",
-            boxShadow: "var(--rns-shadow-lg)",
+            // boxShadow: "var(--rns-shadow-lg)",
           }}
         >
           <img
@@ -110,8 +110,8 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
             style={{
               width: "100%",
               height: "100%",
-              minHeight: 320,
-              objectFit: "cover",
+              minHeight: 420,
+              objectFit: "contain",
               display: "block",
             }}
           />
