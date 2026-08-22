@@ -30,11 +30,11 @@ function ContactLine({ icon, children, href }) {
           width: 26,
           height: 26,
           borderRadius: 7,
-          background: "#1E2C24",
+          background: "#1a1e29",
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#FFB199",
+          color: "#8ea2ff",
           flexShrink: 0,
         }}
       >
@@ -87,8 +87,8 @@ function NewsletterForm({ newsletter }) {
           style={{
             flex: 1,
             minWidth: 0,
-            background: "#1E2C24",
-            border: "1px solid #33473A",
+            background: "#1a1e29",
+            border: "1px solid #2c313e",
             borderRadius: 8,
             padding: "9px 12px",
             fontSize: 13,
@@ -127,14 +127,14 @@ export default function Footer({ logo, about, columns, legal, newsletter, social
         aria-hidden="true"
         style={{
           height: 3,
-          background: "linear-gradient(90deg, var(--rns-primary), #FFB199 55%, transparent)",
+          background: "linear-gradient(90deg, var(--rns-primary), #12b886 55%, transparent)",
         }}
       />
 
       {/* Trust badges — same copy/icon vocabulary as the homepage's
           WhyChooseUs section, condensed into a single row for the footer. */}
       {whyChooseUs?.length > 0 && (
-        <div style={{ borderBottom: "1px solid #1E2C24" }}>
+        <div style={{ borderBottom: "1px solid #21252f" }}>
           <div
             className="rns-container rns-footer-trust"
             style={{
@@ -153,11 +153,11 @@ export default function Footer({ logo, about, columns, legal, newsletter, social
                     width: 30,
                     height: 30,
                     borderRadius: 8,
-                    background: "#1E2C24",
+                    background: "#1a1e29",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#FFB199",
+                    color: "#8ea2ff",
                     flexShrink: 0,
                   }}
                 >
@@ -209,7 +209,7 @@ export default function Footer({ logo, about, columns, legal, newsletter, social
                       width: 32,
                       height: 32,
                       borderRadius: 8,
-                      background: "#1E2C24",
+                      background: "#1a1e29",
                       color: "#9ba3b5",
                       display: "inline-flex",
                       alignItems: "center",
@@ -290,7 +290,7 @@ export default function Footer({ logo, about, columns, legal, newsletter, social
           style={{
             marginTop: 48,
             paddingTop: 22,
-            borderTop: "1px solid #2C3F33",
+            borderTop: "1px solid #262a35",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -304,7 +304,7 @@ export default function Footer({ logo, about, columns, legal, newsletter, social
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {legal.map((l, i) => (
               <React.Fragment key={l.label}>
-                {i > 0 && <span style={{ color: "#46594B" }}>·</span>}
+                {i > 0 && <span style={{ color: "#3a3f4d" }}>·</span>}
                 <FooterLink href={l.href} className="rns-footer-link" style={{ color: "#767d8c" }}>
                   {l.label}
                 </FooterLink>

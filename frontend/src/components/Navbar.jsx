@@ -47,7 +47,7 @@ function CompareAffordance() {
         justifyContent: "center",
         width: 38,
         height: 38,
-        color: "var(--rns-on-ink)",
+        color: "var(--rns-ink)",
         background: "none",
         border: "none",
         cursor: "pointer",
@@ -117,15 +117,6 @@ export default function Navbar({ logo, links, cta }) {
     setOpen(false);
   }
 
-  const lightIconStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 38,
-    height: 38,
-    color: "var(--rns-on-ink)",
-  };
-
   return (
     <header
       ref={navRef}
@@ -133,9 +124,10 @@ export default function Navbar({ logo, links, cta }) {
         position: "sticky",
         top: 0,
         zIndex: 40,
-        background: "var(--rns-bg-ink)",
-        borderTop: "3px solid var(--rns-primary)",
-        boxShadow: scrolled ? "0 10px 28px rgba(15,20,15,0.28)" : "none",
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(6px)",
+        borderBottom: "1px solid var(--rns-line)",
+        boxShadow: scrolled ? "0 6px 20px rgba(16,19,26,0.08)" : "none",
         transition: "box-shadow 0.2s ease",
       }}
     >
@@ -151,66 +143,71 @@ export default function Navbar({ logo, links, cta }) {
           alignItems: "center",
           justifyContent: "space-between",
           height: 68,
-          gap: 20,
         }}
       >
         <Link
           to="/"
           className="rns-nav-logo"
           style={{
+            fontFamily: "var(--rns-font-display)",
+            fontWeight: 700,
+            fontSize: 18,
+            letterSpacing: "-0.01em",
             display: "flex",
             alignItems: "center",
             gap: 8,
             flexShrink: 0,
           }}
         >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              background: "var(--rns-on-ink)",
-              borderRadius: 10,
-              padding: "5px 9px",
-              lineHeight: 0,
-            }}
-          >
-            <img
-              src="/assets/rns_logo.jpg"
-              alt="RNS INFOTECH"
-              style={{ height: "42px", display: "block" }}
-            />
-          </span>
+          <img src="/assets/rns_logo.jpg"
+          alt="RNS INFOTECH"
+          style={{
+            height:"60px",
+            marginLeft:"8px"
+          }}
+          />
         </Link>
 
         <nav
           className="rns-nav-links"
-          style={{ display: "flex", gap: 30, fontSize: 14, fontWeight: 500 }}
+          style={{ display: "flex", gap: 28, fontSize: 14 }}
         >
-          {links.map((l) => {
-            const active = location.pathname === l.href.split("?")[0];
-            return (
-              <NavLink
-                key={l.label}
-                href={l.href}
-                className={active ? "rns-nav-link rns-nav-link--active" : "rns-nav-link"}
-                style={{ color: "var(--rns-on-ink)" }}
-              >
-                {l.label}
-              </NavLink>
-            );
-          })}
+          {links.map((l) => (
+            <NavLink key={l.label} href={l.href} style={{ color: "var(--rns-ink-soft)" }}>
+              {l.label}
+            </NavLink>
+          ))}
         </nav>
 
-        <div className="rns-nav-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="rns-nav-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Link
             to={isAuthenticated ? "/profile" : "/login"}
             aria-label={isAuthenticated ? "Your account" : "Log in"}
             className="rns-nav-hide-mobile"
-            style={lightIconStyle}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 38,
+              height: 38,
+              color: "var(--rns-ink)",
+            }}
           >
             {isAuthenticated ? <Avatar name={currentUser.name} size={26} /> : <Icon name="user" size={20} />}
           </Link>
-          <Link to="/orders" aria-label="Your orders" className="rns-nav-hide-mobile" style={lightIconStyle}>
+          <Link
+            to="/orders"
+            aria-label="Your orders"
+            className="rns-nav-hide-mobile"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 38,
+              height: 38,
+              color: "var(--rns-ink)",
+            }}
+          >
             <Icon name="package" size={20} />
           </Link>
           <CompareAffordance />
@@ -224,7 +221,7 @@ export default function Navbar({ logo, links, cta }) {
               justifyContent: "center",
               width: 38,
               height: 38,
-              color: "var(--rns-on-ink)",
+              color: "var(--rns-ink)",
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -242,13 +239,25 @@ export default function Navbar({ logo, links, cta }) {
                   width: 9,
                   height: 9,
                   borderRadius: "50%",
-                  background: "var(--rns-primary)",
-                  border: "1.5px solid var(--rns-bg-ink)",
+                  background: "#e0392b",
+                  border: "1.5px solid #fff",
                 }}
               />
             )}
           </button>
-          <Link to="/cart" aria-label="View cart" style={{ position: "relative", ...lightIconStyle }}>
+          <Link
+            to="/cart"
+            aria-label="View cart"
+            style={{
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 38,
+              height: 38,
+              color: "var(--rns-ink)",
+            }}
+          >
             <Icon name="cart" size={20} />
             {itemCount > 0 && (
               <span
@@ -275,13 +284,7 @@ export default function Navbar({ logo, links, cta }) {
               </span>
             )}
           </Link>
-          <Button
-            as="a"
-            href={cta.href}
-            variant="primary"
-            className="rns-nav-hide-mobile"
-            style={{ background: "var(--rns-primary)", color: "#fff" }}
-          >
+          <Button as="a" href={cta.href} variant="primary" className="rns-nav-hide-mobile">
             {cta.label}
           </Button>
           <button
@@ -293,7 +296,6 @@ export default function Navbar({ logo, links, cta }) {
               background: "none",
               border: "none",
               padding: 4,
-              color: "var(--rns-on-ink)",
             }}
           >
             <Icon name={open ? "close" : "menu"} size={20} />
@@ -301,19 +303,12 @@ export default function Navbar({ logo, links, cta }) {
         </div>
       </div>
 
-      {/* ruler-tick strip — the cutting-mat edge motif, echoed again in
-          the hero. Purely decorative, sits between the main row and
-          the search row. */}
       <div
-        aria-hidden="true"
         style={{
-          height: 6,
-          background:
-            "repeating-linear-gradient(90deg, rgba(234,241,228,0.28) 0, rgba(234,241,228,0.28) 1px, transparent 1px, transparent 10px)",
+          borderTop: "1px solid var(--rns-line)",
+          background: "var(--rns-bg-alt)",
         }}
-      />
-
-      <div style={{ background: "var(--rns-on-ink)" }}>
+      >
         <div className="rns-container" style={{ padding: "10px var(--rns-gutter)" }}>
           <SearchBar />
         </div>
@@ -325,8 +320,8 @@ export default function Navbar({ logo, links, cta }) {
           style={{
             display: "flex",
             flexDirection: "column",
-            borderTop: "1px solid #33473A",
-            background: "var(--rns-bg-ink)",
+            borderTop: "1px solid var(--rns-line)",
+            background: "var(--rns-bg)",
           }}
         >
           <nav style={{ display: "flex", flexDirection: "column", padding: "14px 0 8px" }}>
@@ -335,12 +330,7 @@ export default function Navbar({ logo, links, cta }) {
                 key={l.label}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                style={{
-                  fontSize: 14.5,
-                  padding: "10px 2px",
-                  borderBottom: "1px solid #33473A",
-                  color: "var(--rns-on-ink)",
-                }}
+                style={{ fontSize: 14.5, padding: "10px 2px", borderBottom: "1px solid var(--rns-line)" }}
               >
                 {l.label}
               </NavLink>
@@ -351,7 +341,7 @@ export default function Navbar({ logo, links, cta }) {
             <Link
               to={isAuthenticated ? "/profile" : "/login"}
               onClick={() => setOpen(false)}
-              style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14.5, color: "var(--rns-on-ink)" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14.5 }}
             >
               {isAuthenticated ? <Avatar name={currentUser.name} size={22} /> : <Icon name="user" size={18} />}
               {isAuthenticated ? "Your account" : "Log in"}
@@ -359,18 +349,12 @@ export default function Navbar({ logo, links, cta }) {
             <Link
               to="/orders"
               onClick={() => setOpen(false)}
-              style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14.5, color: "var(--rns-on-ink)" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14.5 }}
             >
               <Icon name="package" size={18} />
               Your orders
             </Link>
-            <Button
-              as="a"
-              href={cta.href}
-              variant="primary"
-              onClick={() => setOpen(false)}
-              style={{ marginTop: 4, justifyContent: "center", background: "var(--rns-primary)", color: "#fff" }}
-            >
+            <Button as="a" href={cta.href} variant="primary" onClick={() => setOpen(false)} style={{ marginTop: 4, justifyContent: "center" }}>
               {cta.label}
             </Button>
           </div>
@@ -378,16 +362,6 @@ export default function Navbar({ logo, links, cta }) {
       )}
 
       <style>{`
-        .rns-nav-link { position: relative; padding: 4px 0; }
-        .rns-nav-link:hover,
-        .rns-nav-link--active {
-          text-decoration-line: underline;
-          text-decoration-style: wavy;
-          text-decoration-color: var(--rns-primary);
-          text-decoration-thickness: 2px;
-          text-underline-offset: 7px;
-        }
-
         @media (max-width: 800px) {
           .rns-nav-links { display: none !important; }
           .rns-nav-toggle { display: inline-flex !important; }
@@ -395,7 +369,7 @@ export default function Navbar({ logo, links, cta }) {
           .rns-nav-actions { gap: 8px !important; }
         }
         @media (max-width: 420px) {
-          .rns-nav-logo img { height: 32px !important; }
+          .rns-nav-logo img { height: 40px !important; margin-left: 0 !important; }
         }
       `}</style>
     </header>
