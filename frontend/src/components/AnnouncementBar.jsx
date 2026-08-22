@@ -4,14 +4,14 @@ import { useAuth } from "../context/AuthContext";
 
 const DEFAULT_DURATION_MS = 5000;
 
-// type -> accent color. A plain colored dot instead of an emoji glyph
-// keeps this in line with the site's system-label tone (no icon font
-// dependency, still renders above the navbar on every page).
+// type -> accent color + small emoji glyph. Kept intentionally simple
+// (no icon font dependency) since this renders above the navbar on
+// every page and needs to stay lightweight.
 const TYPE_STYLES = {
-  login: { accent: "#5B9DF5" },
-  sale: { accent: "#7B5CFA" },
-  newsletter: { accent: "#33C486" },
-  custom: { accent: "#2151FF" },
+  login: { accent: "#8FC3D9", glyph: "🔑" },
+  sale: { accent: "#FF8A5C", glyph: "🔥" },
+  newsletter: { accent: "#9ED9B0", glyph: "✉️" },
+  custom: { accent: "#FFB199", glyph: "📣" },
 };
 
 /**
@@ -84,16 +84,7 @@ export default function AnnouncementBar() {
           textAlign: "center",
         }}
       >
-        <span
-          aria-hidden="true"
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: style.accent,
-            flexShrink: 0,
-          }}
-        />
+        <span aria-hidden="true">{style.glyph}</span>
         <span>{current.message}</span>
         {current.ctaHref && current.ctaLabel && (
           <a href={current.ctaHref} style={{ color: style.accent, fontWeight: 600 }}>

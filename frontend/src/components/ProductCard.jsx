@@ -46,7 +46,7 @@ export default function ProductCard({ product }) {
           aspectRatio: "4 / 3",
           background: "var(--rns-bg-alt)",
           borderBottom: "1px solid var(--rns-line)",
-          borderRadius: "calc(var(--rns-r-md) - 1px) calc(var(--rns-r-md) - 1px) 0 0",
+          borderRadius: "10px 10px 0 0",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
