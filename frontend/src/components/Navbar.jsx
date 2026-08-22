@@ -134,8 +134,8 @@ export default function Navbar({ logo, links, cta }) {
         top: 0,
         zIndex: 40,
         background: "var(--rns-bg-ink)",
-        borderTop: "3px solid var(--rns-primary)",
-        boxShadow: scrolled ? "0 10px 28px rgba(15,20,15,0.28)" : "none",
+        borderTop: "2px solid var(--rns-primary)",
+        boxShadow: scrolled ? "0 10px 28px rgba(10,11,13,0.28)" : "none",
         transition: "box-shadow 0.2s ease",
       }}
     >
@@ -301,17 +301,9 @@ export default function Navbar({ logo, links, cta }) {
         </div>
       </div>
 
-      {/* ruler-tick strip — the cutting-mat edge motif, echoed again in
-          the hero. Purely decorative, sits between the main row and
-          the search row. */}
-      <div
-        aria-hidden="true"
-        style={{
-          height: 6,
-          background:
-            "repeating-linear-gradient(90deg, rgba(234,241,228,0.28) 0, rgba(234,241,228,0.28) 1px, transparent 1px, transparent 10px)",
-        }}
-      />
+      {/* hairline separator between the main row and the search row —
+          quiet, no ornamentation. */}
+      <div aria-hidden="true" style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
 
       <div style={{ background: "var(--rns-on-ink)" }}>
         <div className="rns-container" style={{ padding: "10px var(--rns-gutter)" }}>
@@ -378,15 +370,22 @@ export default function Navbar({ logo, links, cta }) {
       )}
 
       <style>{`
-        .rns-nav-link { position: relative; padding: 4px 0; }
-        .rns-nav-link:hover,
-        .rns-nav-link--active {
-          text-decoration-line: underline;
-          text-decoration-style: wavy;
-          text-decoration-color: var(--rns-primary);
-          text-decoration-thickness: 2px;
-          text-underline-offset: 7px;
+        .rns-nav-link { position: relative; padding: 4px 0; transition: color 0.15s ease; }
+        .rns-nav-link::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 100%;
+          bottom: -4px;
+          height: 2px;
+          background: var(--rns-primary);
+          border-radius: 2px;
+          transition: right 0.18s ease;
         }
+        .rns-nav-link:hover,
+        .rns-nav-link--active { color: #fff; }
+        .rns-nav-link:hover::after,
+        .rns-nav-link--active::after { right: 0; }
 
         @media (max-width: 800px) {
           .rns-nav-links { display: none !important; }

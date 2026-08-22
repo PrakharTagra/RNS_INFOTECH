@@ -7,42 +7,35 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
       style={{
         position: "relative",
         overflow: "hidden",
-        background: "var(--rns-bg-alt)",
+        background: "var(--rns-bg)",
         borderBottom: "1px solid var(--rns-line)",
       }}
     >
-      {/* cutting-mat grid — the desk surface this whole brand sits on */}
-      <svg
+      {/* a single soft glow, not a pattern — the only atmospheric
+          flourish in the hero, kept quiet and out of the way of type */}
+      <div
         aria-hidden="true"
-        width="100%"
-        height="100%"
-        style={{ position: "absolute", inset: 0, opacity: 0.7 }}
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <pattern id="rns-mat-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-            <path d="M28 0H0V28" fill="none" stroke="var(--rns-line)" strokeWidth="1" />
-          </pattern>
-          <pattern id="rns-mat-grid-major" width="140" height="140" patternUnits="userSpaceOnUse">
-            <path d="M140 0H0V140" fill="none" stroke="var(--rns-line-strong)" strokeWidth="1" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#rns-mat-grid)" />
-        <rect width="100%" height="100%" fill="url(#rns-mat-grid-major)" />
-      </svg>
-
-      {/* ruler edge along the very top — ticks like the ruled border
-          printed on a real cutting mat */}
-      <div aria-hidden="true" className="rns-hero-ruler" />
+        style={{
+          position: "absolute",
+          top: "-18%",
+          right: "-8%",
+          width: 620,
+          height: 620,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(33,81,255,0.10) 0%, rgba(123,92,250,0.05) 45%, transparent 72%)",
+          pointerEvents: "none",
+        }}
+      />
 
       <div
         className="rns-container"
         style={{
           position: "relative",
-          padding: "56px 24px 44px",
+          padding: "76px 24px 64px",
           display: "grid",
-          gridTemplateColumns: "minmax(0,620px) 1fr",
-          gap: 44,
+          gridTemplateColumns: "minmax(0,560px) 1fr",
+          gap: 56,
           alignItems: "center",
         }}
       >
@@ -53,20 +46,20 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
               {eyebrow}
             </span>
           )}
-          <h1 style={{ fontSize: "clamp(34px, 4.4vw, 58px)", lineHeight: 1.05, marginTop: 18 }}>
+          <h1 style={{ fontSize: "clamp(36px, 4.2vw, 60px)", lineHeight: 1.06, marginTop: 20 }}>
             {title}
           </h1>
-          <p style={{ marginTop: 20, fontSize: 17, color: "var(--rns-ink-soft)", maxWidth: 520 }}>
+          <p style={{ marginTop: 22, fontSize: 17.5, color: "var(--rns-ink-soft)", maxWidth: 500, lineHeight: 1.6 }}>
             {subtitle}
           </p>
-          <div style={{ display: "flex", gap: 12, marginTop: 26, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 12, marginTop: 30, flexWrap: "wrap" }}>
             <Button as="a" href={primaryCta.href} variant="primary">{primaryCta.label}</Button>
             <Button as="a" href={secondaryCta.href} variant="ghost">{secondaryCta.label}</Button>
           </div>
 
           {stats.length > 0 && (
-            <div style={{ marginTop: 30, paddingTop: 4 }}>
-              <div className="rns-trace" aria-hidden="true" style={{ marginBottom: 20 }}>
+            <div style={{ marginTop: 40, paddingTop: 4 }}>
+              <div className="rns-trace" aria-hidden="true" style={{ marginBottom: 26 }}>
                 {stats.map((_, i) => (
                   <span
                     key={i}
@@ -75,10 +68,10 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
                   />
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 30, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 34, flexWrap: "wrap" }}>
                 {stats.map((s) => (
                   <div key={s.label}>
-                    <div style={{ fontFamily: "var(--rns-font-display)", fontSize: 27, fontWeight: 700 }}>
+                    <div style={{ fontFamily: "var(--rns-font-display)", fontSize: 26, fontWeight: 800 }}>
                       {s.value}
                     </div>
                     <div
@@ -88,7 +81,7 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         color: "var(--rns-ink-faint)",
-                        marginTop: 5,
+                        marginTop: 6,
                       }}
                     >
                       {s.label}
@@ -100,19 +93,18 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
           )}
         </div>
 
-        {/* "pinned reference photo" panel — a product shot on the mat,
-            held down with a strip of tape. The one deliberate flourish
-            in the hero; everything else stays quiet. */}
+        {/* product panel — a single clean product photograph on a soft
+            platinum backdrop, elevated with shadow only. No props, no
+            decoration standing in for the product itself. */}
         <div className="rns-hero-panel" aria-hidden="true" style={{ position: "relative" }}>
           <div
             style={{
               position: "relative",
-              border: "1px solid var(--rns-line-strong)",
               borderRadius: "var(--rns-r-lg)",
-              minHeight: 340,
+              minHeight: 380,
               overflow: "hidden",
               boxShadow: "var(--rns-shadow-lg)",
-              background: "var(--rns-bg)",
+              background: "var(--rns-bg-alt)",
             }}
           >
             <img
@@ -121,66 +113,16 @@ export default function Hero({ eyebrow, title, subtitle, primaryCta, secondaryCt
               style={{
                 width: "100%",
                 height: "100%",
-                minHeight: 340,
+                minHeight: 380,
                 objectFit: "cover",
                 display: "block",
               }}
             />
           </div>
-          {/* cut-line — a dashed offset border, like the outline scored
-              into the mat around the photo */}
-          <div
-            style={{
-              position: "absolute",
-              inset: -10,
-              border: "2px dashed var(--rns-line-strong)",
-              borderRadius: "calc(var(--rns-r-lg) + 8px)",
-              pointerEvents: "none",
-            }}
-          />
-          {/* tape strip */}
-          <div
-            style={{
-              position: "absolute",
-              top: -16,
-              left: "50%",
-              width: 108,
-              height: 34,
-              background: "rgba(255,177,153,0.55)",
-              border: "1px solid rgba(255,177,153,0.8)",
-              transform: "translateX(-50%) rotate(-3deg)",
-              boxShadow: "0 2px 6px rgba(27,27,22,0.12)",
-            }}
-          />
         </div>
       </div>
 
       <style>{`
-        .rns-hero-ruler {
-          height: 22px;
-          background: var(--rns-bg-alt);
-          border-bottom: 1px solid var(--rns-line-strong);
-          background-image: repeating-linear-gradient(
-            90deg,
-            var(--rns-line-strong) 0,
-            var(--rns-line-strong) 1px,
-            transparent 1px,
-            transparent 40px
-          );
-          position: relative;
-        }
-        .rns-hero-ruler::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image: repeating-linear-gradient(
-            90deg,
-            var(--rns-line) 0,
-            var(--rns-line) 1px,
-            transparent 1px,
-            transparent 10px
-          );
-        }
         @media (max-width: 860px) {
           .rns-hero-panel { display: none; }
         }
