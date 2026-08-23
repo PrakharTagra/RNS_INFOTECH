@@ -17,6 +17,7 @@ import PageLoader from "../../components/PageLoader";
 function HeroForm({ initial, onSaved }) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -36,10 +37,17 @@ function HeroForm({ initial, onSaved }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError("");
     setSaving(true);
-    const saved = await updateSettingsSection("hero", form);
-    setSaving(false);
-    onSaved(saved.hero, "Hero section updated");
+    try {
+      const saved = await updateSettingsSection("hero", form);
+      setForm(saved.hero);
+      onSaved(saved.hero, "Hero section updated");
+    } catch (err) {
+      setError(err.message || "Unable to save the hero section. Your edits have not been saved — please retry before leaving this page.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -48,6 +56,11 @@ function HeroForm({ initial, onSaved }) {
       <p style={{ fontSize: 12.5, color: "var(--admin-ink-faint)", marginBottom: 14 }}>
         The main banner at the top of the homepage.
       </p>
+      {error && (
+        <div style={{ background: "var(--admin-danger-tint)", color: "var(--admin-danger)", padding: "10px 14px", borderRadius: 8, fontSize: 13, marginBottom: 14 }}>
+          {error}
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <FormField label="Title" htmlFor="hero-title" full>
           <textarea id="hero-title" className="admin-input" rows={2} value={form.title} onChange={(e) => set("title", e.target.value)} />
@@ -101,6 +114,7 @@ function HeroForm({ initial, onSaved }) {
 function PromoForm({ initial, onSaved }) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -111,10 +125,17 @@ function PromoForm({ initial, onSaved }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError("");
     setSaving(true);
-    const saved = await updateSettingsSection("promo", form);
-    setSaving(false);
-    onSaved(saved.promo, "Promo banner updated");
+    try {
+      const saved = await updateSettingsSection("promo", form);
+      setForm(saved.promo);
+      onSaved(saved.promo, "Promo banner updated");
+    } catch (err) {
+      setError(err.message || "Unable to save the promo banner. Your edits have not been saved — please retry before leaving this page.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -123,6 +144,11 @@ function PromoForm({ initial, onSaved }) {
       <p style={{ fontSize: 12.5, color: "var(--admin-ink-faint)", marginBottom: 14 }}>
         The mid-page promotional strip between catalogue sections.
       </p>
+      {error && (
+        <div style={{ background: "var(--admin-danger-tint)", color: "var(--admin-danger)", padding: "10px 14px", borderRadius: 8, fontSize: 13, marginBottom: 14 }}>
+          {error}
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 2fr" }}>
           <FormField label="Eyebrow" htmlFor="promo-eyebrow">
@@ -169,7 +195,11 @@ export default function HomepageSettingsTab() {
   }
 
   async function handlePreview() {
-    setPreview(await getPreview());
+    try {
+      setPreview(await getPreview());
+    } catch (err) {
+      showToast(err.message || "Unable to load the draft preview.", "danger");
+    }
   }
 
   async function handlePublish() {
@@ -178,6 +208,8 @@ export default function HomepageSettingsTab() {
       const next = await publishSettings();
       setSettings((current) => ({ ...current, ...next, publishedWebsite: next }));
       showToast("Homepage published");
+    } catch (err) {
+      showToast(err.message || "Unable to publish the homepage. Nothing went live — please retry.", "danger");
     } finally {
       setPublishing(false);
     }
