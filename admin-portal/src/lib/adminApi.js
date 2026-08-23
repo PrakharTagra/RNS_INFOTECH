@@ -4,6 +4,21 @@ const configuredApiBaseUrl = import.meta.env.VITE_ADMIN_API_BASE_URL;
 if (!configuredApiBaseUrl) throw new Error("VITE_ADMIN_API_BASE_URL is required.");
 export const API_BASE_URL = configuredApiBaseUrl.replace(/\/$/, "");
 
+// Zod validation errors (see admin-backend/src/middleware/validate.js) come
+// back as { error: { message: "Validation failed.", details: { field: [msg, ...] } } }.
+// Without this, every form on every page collapsed to the bare message with
+// no indication of which field was wrong.
+function detailedValidationMessage(payload, fallback) {
+  const details = payload?.error?.details;
+  const base = payload?.error?.message || fallback;
+  if (!details || typeof details !== "object") return base;
+  const fieldMessages = Object.entries(details)
+    .filter(([, messages]) => Array.isArray(messages) && messages.length)
+    .map(([field, messages]) => `${field}: ${messages.join(", ")}`);
+  if (!fieldMessages.length) return base;
+  return `${base} ${fieldMessages.join(" · ")}`;
+}
+
 function userFacingMessage(status, payload, fallback = "Request failed.") {
   if (status === 401) return "Your admin session has expired. Please sign in again.";
   if (status === 403) return "You do not have permission to perform this action.";
@@ -12,6 +27,7 @@ function userFacingMessage(status, payload, fallback = "Request failed.") {
   if (status === 413) return "The request is too large.";
   if (status === 429) return "Too many requests. Please wait and try again.";
   if (status >= 500) return "The admin service is temporarily unavailable. Please try again.";
+  if (status === 400) return detailedValidationMessage(payload, fallback);
   return payload?.error?.message || payload?.message || fallback;
 }
 
