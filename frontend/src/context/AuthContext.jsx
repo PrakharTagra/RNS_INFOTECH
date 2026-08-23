@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
     pendingVerification,
     hydrated,
 
-    requestOtp: async (email) => {
+    requestOtp: async (email, intent) => {
       const normalizedEmail = String(email || "").trim().toLowerCase();
       if (!normalizedEmail) return { ok: false, error: "Email is required." };
 
@@ -67,6 +67,10 @@ export function AuthProvider({ children }) {
           expiresInSeconds: response.expiresInSeconds,
           devCode: response.devCode || null,
           name: pendingVerification?.name || "",
+          // Which page this OTP request came from — gates whether
+          // verify-otp is allowed to create a new account. Falls back to
+          // "login" (the safer default) if unspecified.
+          intent: intent || pendingVerification?.intent || "login",
         });
 
         return { ok: true, devCode: response.devCode || null };
@@ -76,7 +80,7 @@ export function AuthProvider({ children }) {
     },
 
     signup: async ({ name, email }) => {
-      const result = await api.requestOtp(email);
+      const result = await api.requestOtp(email, "signup");
       if (!result.ok) return result;
       setPendingVerification((prev) => ({
         email: String(email || "").trim().toLowerCase(),
@@ -84,6 +88,7 @@ export function AuthProvider({ children }) {
         expiresInSeconds: prev?.expiresInSeconds || 600,
         devCode: result.devCode || prev?.devCode || null,
         name: String(name || "").trim(),
+        intent: "signup",
       }));
       return { ok: true };
     },
@@ -91,7 +96,8 @@ export function AuthProvider({ children }) {
     restartVerification: async (email, name = "") => {
       const normalizedEmail = String(email || "").trim().toLowerCase();
       if (!normalizedEmail) return { ok: false, error: "Email is required." };
-      const result = await api.requestOtp(normalizedEmail);
+      const intent = name ? "signup" : "login";
+      const result = await api.requestOtp(normalizedEmail, intent);
       if (!result.ok) return result;
       setPendingVerification((prev) => ({
         email: normalizedEmail,
@@ -99,13 +105,14 @@ export function AuthProvider({ children }) {
         expiresInSeconds: prev?.expiresInSeconds || 600,
         devCode: result.devCode || prev?.devCode || null,
         name: String(name || "").trim(),
+        intent,
       }));
       return { ok: true };
     },
 
     resendOtp: async () => {
       if (!pendingVerification?.email) return { ok: false, error: "No verification in progress." };
-      return api.requestOtp(pendingVerification.email);
+      return api.requestOtp(pendingVerification.email, pendingVerification.intent);
     },
 
     verifyEmail: async (code, nameOverride) => {
@@ -126,6 +133,7 @@ export function AuthProvider({ children }) {
             email: pendingVerification.email,
             code,
             ...(name ? { name } : {}),
+            intent: pendingVerification.intent || "login",
           },
         });
 
@@ -152,7 +160,7 @@ export function AuthProvider({ children }) {
       const normalizedEmail = String(email || "").trim().toLowerCase();
       if (!normalizedEmail) return { ok: false, error: "Email is required." };
 
-      const result = await api.requestOtp(normalizedEmail);
+      const result = await api.requestOtp(normalizedEmail, "login");
       if (!result.ok) return result;
       return { ok: true, needsVerification: true };
     },

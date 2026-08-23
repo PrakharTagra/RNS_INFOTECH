@@ -36,7 +36,7 @@ export default function VerifyEmailPage() {
   // being left staring at a code that can never succeed. OTP_INVALID
   // (a plain wrong digit) is deliberately excluded: that one's worth a
   // retry with the same still-live code.
-  const deadCodeErrors = new Set(["OTP_NOT_FOUND", "OTP_LOCKED", "OTP_CONSUMED"]);
+  const deadCodeErrors = new Set(["OTP_NOT_FOUND", "OTP_LOCKED", "OTP_CONSUMED", "ACCOUNT_NOT_FOUND"]);
   // Codes that mean the resend button itself should stay disabled a while
   // longer, independent of the local cooldown timer.
   const resendBlockedErrors = new Set(["OTP_COOLDOWN", "OTP_DAILY_LIMIT", "RATE_LIMITED"]);
@@ -160,6 +160,14 @@ export default function VerifyEmailPage() {
             {error && (
               <div style={{ fontSize: 12.5, color: "#d64545", background: "#fdeceb", borderRadius: 6, padding: "8px 12px" }}>
                 {error}
+                {errorCode === "ACCOUNT_NOT_FOUND" && (
+                  <>
+                    {" "}
+                    <Link to="/signup" state={{ from, fromState }} style={{ color: "#d64545", fontWeight: 600, textDecoration: "underline" }}>
+                      Create one
+                    </Link>
+                  </>
+                )}
               </div>
             )}
 

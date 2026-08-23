@@ -19,8 +19,8 @@ class ApiError extends Error {
   static forbidden(message = "Forbidden") {
     return new ApiError(403, message);
   }
-  static notFound(message = "Not found") {
-    return new ApiError(404, message);
+  static notFound(message = "Not found", opts) {
+    return new ApiError(404, message, opts);
   }
   static conflict(message, opts) {
     return new ApiError(409, message, opts);

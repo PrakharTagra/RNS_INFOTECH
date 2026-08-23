@@ -71,7 +71,7 @@ describe("POST /api/auth/verify-otp", () => {
     expect(res.body.error.code).toBe("OTP_NOT_FOUND");
   });
 
-  it("issues tokens and creates a user on a correct code", async () => {
+  it("issues tokens and creates a user on a correct code with signup intent", async () => {
     const codeHash = await otpService.hashCode("123456");
     const otpDoc = {
       email: "shopper@example.com",
@@ -95,13 +95,70 @@ describe("POST /api/auth/verify-otp", () => {
 
     const res = await request(app)
       .post("/api/auth/verify-otp")
-      .send({ email: "shopper@example.com", code: "123456" });
+      .send({ email: "shopper@example.com", code: "123456", intent: "signup" });
 
     expect(res.status).toBe(200);
     expect(res.body.accessToken).toEqual(expect.any(String));
     expect(res.body.refreshToken).toEqual(expect.any(String));
     expect(otpDoc.consumedAt).not.toBeNull();
     expect(savedUser.save).toHaveBeenCalled();
+  });
+
+  it("rejects a login attempt for an email with no existing account, and does not create one", async () => {
+    const codeHash = await otpService.hashCode("123456");
+    const otpDoc = {
+      email: "stranger@example.com",
+      codeHash,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      save: jest.fn().mockResolvedValue(true),
+    };
+    Otp.findOne.mockReturnValue({ sort: jest.fn().mockResolvedValue(otpDoc) });
+    User.findOne.mockResolvedValue(null);
+    User.create.mockClear();
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email: "stranger@example.com", code: "123456" });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("ACCOUNT_NOT_FOUND");
+    expect(User.create).not.toHaveBeenCalled();
+    // The code is still burned even though login was refused — otherwise
+    // the same code could be replayed against a real signup afterwards.
+    expect(otpDoc.consumedAt).not.toBeNull();
+  });
+
+  it("logs in an existing user without requiring signup intent", async () => {
+    const codeHash = await otpService.hashCode("123456");
+    const otpDoc = {
+      email: "regular@example.com",
+      codeHash,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      save: jest.fn().mockResolvedValue(true),
+    };
+    Otp.findOne.mockReturnValue({ sort: jest.fn().mockResolvedValue(otpDoc) });
+
+    const existingUser = {
+      _id: "user456",
+      email: "regular@example.com",
+      name: "Returning Shopper",
+      isVerified: true,
+      save: jest.fn().mockResolvedValue(true),
+    };
+    User.findOne.mockResolvedValue(existingUser);
+    User.create.mockClear();
+
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email: "regular@example.com", code: "123456" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.accessToken).toEqual(expect.any(String));
+    expect(User.create).not.toHaveBeenCalled();
+    expect(existingUser.save).toHaveBeenCalled();
   });
 
   it("increments attempts and returns 401 on an incorrect code", async () => {

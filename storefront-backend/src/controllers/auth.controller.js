@@ -59,7 +59,7 @@ const requestOtp = asyncHandler(async (req, res) => {
 
 // POST /api/auth/verify-otp
 const verifyOtp = asyncHandler(async (req, res) => {
-  const { email, code, name } = req.body;
+  const { email, code, name, intent } = req.body;
 
   const otp = await Otp.findOne({ email, consumedAt: null }).sort({ createdAt: -1 });
 
@@ -106,6 +106,15 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   let user = await User.findOne({ email });
   if (!user) {
+    // Login and Signup share this same endpoint (both just verify an
+    // OTP), so without this check, typing any email on the LOGIN page —
+    // even one that never signed up — silently created an account and
+    // logged them in. Only the Signup flow is allowed to create a new
+    // account; a login attempt against an unknown email is rejected
+    // instead, telling the person to sign up first.
+    if (intent === "login") {
+      throw ApiError.notFound("No account found for this email. Please sign up first.", { code: "ACCOUNT_NOT_FOUND" });
+    }
     user = await User.create({ email, name: name || "", isVerified: true });
   } else if (!user.isVerified || (name && !user.name)) {
     user.isVerified = true;
